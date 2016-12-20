@@ -1,0 +1,15 @@
+plugins {
+	id "net.ltgt.apt" version "0.9"
+}
+
+jar {
+    baseName = 'StjernCraft-CP-Core'
+    version =  '0.0.1'
+}
+
+dependencies {
+	compile project(":Api")
+	apt project(":Api")
+	compile "com.sparkjava:spark-core:2.5.2"
+	compile "com.google.guava:guava:20.0"
+}
