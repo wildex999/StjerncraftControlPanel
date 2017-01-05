@@ -4,6 +4,9 @@ import static spark.Spark.*;
 
 import com.stjerncraft.controlpanel.core.Core;
 
+import spark.Request;
+import spark.Response;
+
 public class HTTPServer {
 	
 	protected short port;
@@ -20,8 +23,21 @@ public class HTTPServer {
 	public void start() {
 		port(port);
 		
-		get("/hello", (req, res) -> "Hello World");
+		staticFiles.location("/public");
+		
+		before("/modules/:module", (req, res) -> handleAuthentication(req, res));
+		get("/modules/*", (req, res) -> { return handleModules(req, res); });
+		
+		
 		
 		awaitInitialization();
+	}
+	
+	protected void handleAuthentication(Request req, Response res) {
+		
+	}
+	
+	public Object handleModules(Request req, Response res) {
+		return null;
 	}
 }

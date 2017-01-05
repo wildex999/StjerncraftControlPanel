@@ -10,6 +10,11 @@ jar {
 dependencies {
 	compile project(":Api")
 	apt project(":Api")
+	compile project(":ModuleCore")
 	compile "com.sparkjava:spark-core:2.5.2"
 	compile "com.google.guava:guava:20.0"
+}
+
+task buildModuleCore() {
+    dependsOn(":ModuleCore:build")
 }
