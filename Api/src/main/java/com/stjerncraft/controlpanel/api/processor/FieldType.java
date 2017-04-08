@@ -1,18 +1,8 @@
 package com.stjerncraft.controlpanel.api.processor;
 
-enum FieldType {
-	Boolean("Boolean", Boolean.class.getCanonicalName(), "boolean"), //Name, class path, primitive name
-	Byte("Byte", Byte.class.getCanonicalName(), "byte"),
-	Character("Character", Character.class.getCanonicalName(), "char"),
-	Short("Short", Short.class.getCanonicalName(), "short"),
-	Integer("Integer", Integer.class.getCanonicalName(), "int"),
-	Long("Long", Long.class.getCanonicalName(), "long"),
-	Float("Float", Float.class.getCanonicalName(), "float"),
-	Double("Double", Double.class.getCanonicalName(), "double"),
-	String("String", String.class.getCanonicalName()),
-	Void("Void", Void.class.getCanonicalName(), "void");
-	
-	
+import java.util.Objects;
+
+public class FieldType {
 	public String name;
 	public String[] classPaths;
 	
@@ -22,18 +12,29 @@ enum FieldType {
 		
 	}
 	
-	/**
-	 * Get the type with the given classPath.
-	 * @param classPath Full qualified name of the type to check for
-	 * @return Null if no valid type with the given classPath exists.
-	 */
-	public static FieldType getType(String classPath) {
-		for(FieldType type : values()) {
-			for(String cp : type.classPaths) {
-				if(cp.equals(classPath))
-					return type;
-			}
-		}
-		return null;
+	public String getCanonicalName() {
+		return this.classPaths[0];
 	}
+	
+	public String getPrimitiveName() {
+		return this.classPaths[1];
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj == null)
+			return false;
+		if(!(obj instanceof FieldType))
+			return false;
+		
+		//If class path matches, they are the same type
+		FieldType other = (FieldType)obj;
+		return Objects.equals(getCanonicalName(), other.getCanonicalName());
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(getCanonicalName());
+	}
+	
 }

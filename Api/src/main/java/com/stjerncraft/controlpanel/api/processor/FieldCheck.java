@@ -36,10 +36,19 @@ class FieldCheck {
 	 * @return
 	 */
 	public static FieldType getActualFieldType(TypeMirror type) {
-		if(FieldCheck.isArray(type))
-			return FieldType.getType(FieldCheck.getArrayComponentType(type).toString());
+		//TODO: HANDLE DataObject(WHich is not a BaseType)
+		asd
+		BaseType fieldType = null;
+		if(FieldCheck.isArray(type)) {
+			fieldType = BaseType.getType(FieldCheck.getArrayComponentType(type).toString());
+			
+		}
+		
+		//FieldType fieldType = FieldType.getType(type.toString());
+		if(fieldType == null)
+			return null;
 		else
-			return FieldType.getType(type.toString());
+			return fieldType.type;
 	}
 	
 	public static boolean isValidType(Map<String, DataObjectInfo> dataObjects, TypeMirror type) {
@@ -56,7 +65,7 @@ class FieldCheck {
 		
 		if(type.getKind().isPrimitive()) //int, long, double...
 			return true;
-		if(FieldType.getType(typeStr) != null) //String, Integer, Float...
+		if(BaseType.getType(typeStr) != null) //String, Integer, Float...
 			return true;
 		if(dataObjects.containsKey(typeStr)) //This or another DataObject
 			return true;

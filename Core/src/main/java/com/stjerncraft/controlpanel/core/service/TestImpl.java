@@ -17,13 +17,13 @@ public class TestImpl implements ExtendService{
 	}
 
 	@Override
-	public void registerService(IServiceManager manager) {
+	public void onRegister(IServiceManager manager) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void unregisterService() {
+	public void onUnregister() {
 		// TODO Auto-generated method stub
 		
 	}

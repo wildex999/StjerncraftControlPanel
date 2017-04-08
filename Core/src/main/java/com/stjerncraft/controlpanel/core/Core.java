@@ -40,8 +40,13 @@ public class Core {
 		return agentList;
 	}
 	
-	public List<ServiceProvider> getServiceProviders(ServiceApi api) {
-		List<ServiceProvider> serviceProviderList = new ArrayList<>();
+	/**
+	 * Get all Service Providers implementing the given ServiceApi
+	 * @param api
+	 * @return
+	 */
+	public List<ServiceProvider<? extends ServiceApi>> getServiceProviders(ServiceApi api) {
+		List<ServiceProvider<? extends ServiceApi>> serviceProviderList = new ArrayList<>();
 		for(IAgent agent : agents.values())
 			serviceProviderList.addAll(agent.getServiceProviders(api));
 

@@ -9,10 +9,10 @@ import com.stjerncraft.controlpanel.core.client.IClient;
 
 public class LocalSession implements ISession {
 	IClient client;
-	Agent agent;
+	LocalAgent agent;
 	LocalServiceProvider serviceProvider;
 
-	public LocalSession(Agent agent, IClient client, LocalServiceProvider serviceProvider) {
+	public LocalSession(LocalAgent agent, IClient client, LocalServiceProvider serviceProvider) {
 		this.agent = agent;
 		this.client = client;
 		this.serviceProvider = serviceProvider;

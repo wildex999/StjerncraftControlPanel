@@ -16,6 +16,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.tools.Diagnostic.Kind;
 
 import com.stjerncraft.controlpanel.api.IServiceProvider;
 import com.stjerncraft.controlpanel.api.annotation.ServiceApi;
@@ -86,27 +87,29 @@ class ServiceApiProcessor {
 			return;
 		
 		ExecutableElement method = (ExecutableElement)element;
-		Method newMethod = new Method();
+		Method newMethod = new Method(method.getSimpleName().toString());
 		
 		//Return type
 		TypeMirror returnType = method.getReturnType();
-		if(!FieldCheck.isValidType(dataObjectProc.getParsedDataObjects(), returnType))
-			throw new IllegalArgumentException("[" + api.getName() + "] Method return type " + returnType + " is invalid for " + element.getSimpleName() + " from " + element.getEnclosingElement());
+		FieldType returnFieldType = FieldCheck.getActualFieldType(returnType);
+		if(!FieldCheck.isValidType(dataObjectProc.getParsedDataObjects(), returnType) || returnFieldType == null)
+			throw new IllegalArgumentException("[" + api.getName() + "] Method return type " + returnType + " is invalid for " + newMethod.name + " from " + element.getEnclosingElement());
 
-		newMethod.setReturnType(FieldCheck.getActualFieldType(returnType), FieldCheck.isArray(returnType));
+		newMethod.setReturnType(returnFieldType, FieldCheck.isArray(returnType));
 		
 		//Parameters
 		for(VariableElement par : method.getParameters()) {
 			TypeMirror parType = par.asType();
-			if(!FieldCheck.isValidType(dataObjectProc.getParsedDataObjects(), parType)) {
+			FieldType parFieldType = FieldCheck.getActualFieldType(parType);
+			if(!FieldCheck.isValidType(dataObjectProc.getParsedDataObjects(), parType) || parFieldType == null || parFieldType == BaseType.Void.type) {
 				throw new IllegalAccessError("[" + api.getName() + "] Method parameter " + par.getSimpleName() + " has invalid type " + par.asType() + 
 												" for " + element.getSimpleName() + " from " + element.getEnclosingElement());
 			}
-			
-			Field parField = new Field(par.getSimpleName().toString(), FieldCheck.isArray(parType), FieldCheck.getActualFieldType(parType));
+			procEnv.getMessager().printMessage(Kind.NOTE, "PARType: " + parFieldType);
+			Field parField = new Field(par.getSimpleName().toString(), FieldCheck.isArray(parType), parFieldType);
 			newMethod.addParameter(parField);
 		}
-		
+		procEnv.getMessager().printMessage(Kind.NOTE, "METHOD: " + newMethod);
 		api.addMethod(newMethod);
 	}
 

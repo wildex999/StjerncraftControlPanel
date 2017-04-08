@@ -19,7 +19,6 @@ class Field {
 	public boolean equals(Object obj) {
 		if(!(obj instanceof Field))
 			return false;
-
 		
 		Field other = (Field)obj;
 		if(fieldType != other.fieldType)
@@ -30,5 +29,10 @@ class Field {
 			return false;
 		
 		return true;
+	}
+	
+	@Override
+	public String toString() {
+		return fieldType + (isArray ? "[]" : "") + " " + name;
 	}
 }

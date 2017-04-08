@@ -4,21 +4,33 @@ import java.util.List;
 
 /**
  * Responsible for managing the Service API implementations, forwarding the method calls, events etc.
- * Note: The service manager should return proxied implementations of the Service Providers, as getClient() is expected to
- * return the calling client.(Or should all local calls come from the "local" client?)
+ * 
+ * The Service Manager will also provide context to the Service Provider, like which client is doing the method call.
  */
 
 public interface IServiceManager {
 	/**
 	 * The client doing the current method call/event subscription etc.
-	 * @return
+	 * This will be null for all direct method calls internally.
 	 */
 	public IClient getClient();
 	
 	/**
+	 * Get the event subscription for the current event subscription.
+	 * This will only return a non-null value when called inside a method tagged with EventHandler.
+	 */
+	public IEventSubscription getEventSubscription();
+	
+	/**
+	 * Get the event action for the current event subscription.
+	 * This will only return a non-null value when called inside a method tagged with EventHandler.
+	 */
+	public EventAction getEventAction();
+	
+	/**
 	 * Get the Service Provider for the given Service API
 	 * @param apiInterfaceClass The Service API for which you want the Service Provider 
-	 * @returnA Service Provider implementing the given Service API, or null if none is registered.
+	 * @return A Service Provider implementing the given Service API, or null if none is registered.
 	 */
 	public <T extends IServiceProvider> T getService(Class<T> apiInterfaceClass);
 	

@@ -8,12 +8,16 @@ import java.util.Set;
  */
 
 class Method {
-	String name;
-	Set<Field> parameters = new HashSet<Field>();
+	protected String name;
+	protected Set<Field> parameters = new HashSet<Field>();
 	
-	FieldType returnType;
-	boolean isReturnArray;
+	protected FieldType returnType;
+	protected boolean isReturnArray;
 
+	public Method(String name) {
+		this.name = name;
+	}
+	
 	public void addParameter(Field par) {
 		parameters.add(par);
 	}
@@ -39,5 +43,10 @@ class Method {
 			return false;
 		
 		return true;
+	}
+	
+	@Override
+	public String toString() {
+		return "Method: " + returnType + (isReturnArray ? "[]" : "") + " " + name + "(" + parameters + ")";
 	}
 }

@@ -22,7 +22,7 @@ import com.stjerncraft.controlpanel.core.client.IClient;
  * Agent for local Service Providers.
  */
 
-public class Agent implements IAgent {
+public class LocalAgent implements IAgent {
 	protected String name;
 	
 	Map<Class<? extends IServiceProvider>, LocalServiceApi> apiRegister;
@@ -32,7 +32,7 @@ public class Agent implements IAgent {
 	
 	Set<LocalSession> sessions;
 	
-	public Agent(String name) {
+	public LocalAgent(String name) {
 		this.name = name;
 		
 		apiRegister = new HashMap<>();

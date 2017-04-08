@@ -25,4 +25,9 @@ class ServiceApiInfo {
 	public void addMethod(Method method) {
 		methods.add(method);
 	}
+	
+	@Override
+	public String toString() {
+		return "ServiceApiInfo: " + name + " | " + version;
+	}
 }

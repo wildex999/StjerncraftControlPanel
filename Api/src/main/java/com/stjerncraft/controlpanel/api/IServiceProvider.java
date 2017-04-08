@@ -11,12 +11,13 @@ public interface IServiceProvider {
 
 	/**
 	 * Called when the ServiceProvider is registered to the given Control Panel.
+	 * @param manager The manager for the Service Manager to get the current user and to access other services.
 	 */
-	public void registerService(IServiceManager manager);
+	public void onRegister(IServiceManager manager);
 	
 	/**
 	 * Call when the ServiceProvider is removed from the given core.
 	 * Note: The manager is no longer valid at this point!
 	 */
-	public void unregisterService();
+	public void onUnregister();
 }

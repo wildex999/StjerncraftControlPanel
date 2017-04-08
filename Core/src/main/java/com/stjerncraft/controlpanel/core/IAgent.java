@@ -24,7 +24,7 @@ public interface IAgent {
 	public boolean providesApi(ServiceApi api);
 	
 	/**
-	 * 
+	 * Start a session with a ServiceProvider registered to this Agent
 	 * @param service Service Provider to start a session with.
 	 * @param client Client which is starting the session.
 	 * @return A session object to use for further communication, or null if it failed to create a session.

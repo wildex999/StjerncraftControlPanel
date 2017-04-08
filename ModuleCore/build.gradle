@@ -9,6 +9,7 @@ node {
   // distBaseUrl = Custom artifactory location here for node/npm.
 }
 
-task build() {
-	println "Build ModuleCore!"
+task build(type: NpmTask) {
+    //Build the javascript library
+    args = ['run', 'build']
 }

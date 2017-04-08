@@ -66,8 +66,8 @@ public class Processor extends AbstractProcessor {
 		//- Generate js library
 		//- Generate proxy API, which will be given per user and include things like user data:
 		// So an user of a API would do ServiceManager.getApi(ApiInterface). This would return the generated class: ApiInterfaceProxy implements ApiInterface.
-		// This proxy would simply relay the method calls, after setting the correct user: myMethod(int nr) { serviceManager.setUser(user); apiImplementation.myMethod(int nr); }
-		ApiClassGenerator apiClassGenerator = new ApiClassGenerator(dataObjectProc);
+		// This proxy would simply relay the method calls, after setting the correct user: myMethod(int nr) { serviceManager.setUser(user); apiImplementation.myMethod(nr); }
+		ServiceApiClassGenerator apiClassGenerator = new ServiceApiClassGenerator(dataObjectProc);
 		try {
 			for(ServiceApiInfo api : serviceApiProc.apis.values()) {
 				if(generated.contains(api))
