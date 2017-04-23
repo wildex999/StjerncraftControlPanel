@@ -73,7 +73,7 @@ class DataObjectProcessor {
 			throw new IllegalArgumentException("[" + obj.getName() + "] " + field.getSimpleName() + " does not have a valid Type: " + fieldType);
 		
 		//Store the new field
-		obj.addField(new Field(field.getSimpleName().toString(), FieldCheck.isArray(fieldType), FieldCheck.getActualFieldType(fieldType)));
+		obj.addField(new Field(field.getSimpleName().toString(), FieldCheck.isArray(fieldType), FieldCheck.getActualFieldType(fieldType, dataObjects)));
 	}
 	
 	/**

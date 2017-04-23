@@ -6,6 +6,11 @@ public class FieldType {
 	public String name;
 	public String[] classPaths;
 	
+	/**
+	 * 
+	 * @param name
+	 * @param classPaths The first classpath should be the Canonical Name of the type, and the second should be the primitive name.
+	 */
 	FieldType(String name, String... classPaths) {
 		this.name = name;
 		this.classPaths = classPaths;
@@ -35,6 +40,11 @@ public class FieldType {
 	@Override
 	public int hashCode() {
 		return Objects.hashCode(getCanonicalName());
+	}
+	
+	@Override
+	public String toString() {
+		return "FieldType: " + name;
 	}
 	
 }

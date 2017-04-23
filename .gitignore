@@ -25,3 +25,5 @@ Api/build/
 .settings/
 Api/.classpath
 ModuleCore/node_modules/
+Core/.metadata/
+.metadata/

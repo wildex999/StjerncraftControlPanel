@@ -28,14 +28,14 @@ public interface IServiceManager {
 	public EventAction getEventAction();
 	
 	/**
-	 * Get the Service Provider for the given Service API
+	 * Get the Service Provider for the given Service API, which is registered locally.
 	 * @param apiInterfaceClass The Service API for which you want the Service Provider 
 	 * @return A Service Provider implementing the given Service API, or null if none is registered.
 	 */
 	public <T extends IServiceProvider> T getService(Class<T> apiInterfaceClass);
 	
 	/**
-	 * Get all Service Providers of the given Service API
+	 * Get all Service Providers of the given Service API, which is registered locally.
 	 * @param apiInterfaceClass The Service API for which you want the Service Provider
 	 * @return A list of all Service Providers implementing the given Service API.
 	 */

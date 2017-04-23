@@ -1,7 +1,6 @@
 package com.stjerncraft.controlpanel.api.processor;
 
 import java.io.IOException;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.annotation.processing.Filer;
@@ -10,6 +9,7 @@ import javax.lang.model.element.Modifier;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
@@ -65,7 +65,14 @@ class ServiceApiClassGenerator {
 			.returns(String.class)
 			.addStatement("return $S", api.getName())
 			.build();
-		MethodSpec callMethod = generateCallMethod(api);
+		MethodSpec callMethod = MethodSpec.methodBuilder("callMethod")
+			.addModifiers(Modifier.PUBLIC)
+			.returns(String.class)
+			.addParameter(IServiceProvider.class, "serviceProvider")
+			.addParameter(String.class, "method")
+			.addStatement("return callMethod(($L)serviceProvider, method)", api.name)
+			.build();
+		MethodSpec callDirectMethod = generateCallMethod(api);
 		
 		TypeSpec generatedClass = TypeSpec.classBuilder(className + ApiStrings.APISUFFIX)
 			.addModifiers(Modifier.PUBLIC)
@@ -74,6 +81,7 @@ class ServiceApiClassGenerator {
 			.addMethod(getApiVersion)
 			.addMethod(getApiName)
 			.addMethod(callMethod)
+			.addMethod(callDirectMethod)
 			.build();
 		
 		JavaFile javaFile = JavaFile.builder(packageName, generatedClass).build();
@@ -93,23 +101,24 @@ class ServiceApiClassGenerator {
 		MethodSpec.Builder method = MethodSpec.methodBuilder("callMethod")
 			.addModifiers(Modifier.PUBLIC)
 			.returns(String.class)
-			.addParameter(IServiceProvider.class, "serviceProvider")
-			.addParameter(JSONObject.class, "method");
+			.addParameter(ClassName.bestGuess(api.name), "serviceProvider")
+			.addParameter(String.class, "method");
 				
 				
 		//Deserialize JSON
-		method.addStatement("$T obj = new $T(method);", JSONObject.class, JSONObject.class)
+		method.addStatement("$T obj = new $T(method)", JSONObject.class, JSONObject.class)
 			.beginControlFlow("if(obj.keySet().size() != $L)", 1)
-			.addStatement("throw new $T(this, $S, $S + obj.keySet().size() + $S, method);", CallMethodException.class, "?", "Incorrect number of keys: ", ", expected 1")
+			.addStatement("throw new $T(this, $S, $S + obj.keySet().size() + $S, method)", CallMethodException.class, "?", "Incorrect number of keys: ", ", expected 1")
 			.endControlFlow()
 				
-			.addStatement("$T methodName = obj.keySet().iterator().next();", String.class)
-			.addStatement("$T args = obj.getJSONArray(methodName);", JSONArray.class);
+			.addStatement("$T methodName = obj.keySet().iterator().next()", String.class)
+			.addStatement("$T args = obj.getJSONArray(methodName)", JSONArray.class);
 				
 		//Method Switch
+		method.addStatement("$T argArray;", JSONArray.class);
 		method.beginControlFlow("switch(methodName)");
 		for(Method apiMethod : api.methods) {
-			method.addStatement("case $S:", apiMethod.name)
+			method.addCode("case $S:\n", apiMethod.name)
 			.beginControlFlow("if(args.length() != $L)", apiMethod.parameters.size())
 			.addStatement("throw new $T(this, methodName, $S + args.length() + $S, method)", CallMethodException.class, "Incorrect number of arguments: ", ", expected " + apiMethod.parameters.size())
 			.endControlFlow();
@@ -121,47 +130,57 @@ class ServiceApiClassGenerator {
 					throw new IllegalArgumentException("Null fieldType at field: " + arg + " in " + apiMethod + " while parsing api " + api);
 				String argClass = arg.fieldType.getCanonicalName();
 
+				//Will return the string for parsing an argument value
+				//Ex: "(short)$L.getInt($L)
+				//Ex: "CustomDataClass.parse($L.getJSONObject($L))"
 				Function<Void, String> getParseStr = (Void v) -> {
 					String parseStr;
 					if(dataObjects.getParsedDataObjects().containsKey(argClass))
-						parseStr = argClass + ".parse($L.getJSONObject($L));";
+						parseStr = argClass + ApiStrings.DATAOBJECTSUFFIX + ".parse($L.getJSONObject($L))";
 					else {
 						//Check base types
 						FieldType ft = arg.fieldType;
 						if(ft == BaseType.Boolean.type)
-							parseStr = "$L.getBoolean($L);";
+							parseStr = "$L.getBoolean($L)";
 						else if(ft == BaseType.Byte.type || ft == BaseType.Character.type || 
 								ft == BaseType.Short.type || ft == BaseType.Integer.type)
-							parseStr = "(" + arg.fieldType.getPrimitiveName() + ")$L.getInt($L);"; //ex: (short)arg.getInt(index);
+							parseStr = "(" + arg.fieldType.getPrimitiveName() + ")$L.getInt($L)"; //ex: (short)arg.getInt(index);
 						else if(ft == BaseType.Double.type || ft == BaseType.Float.type)
-							parseStr = "(" + arg.fieldType.getPrimitiveName() + ")$L.getDouble($L);";
+							parseStr = "(" + arg.fieldType.getPrimitiveName() + ")$L.getDouble($L)";
 						else if(ft == BaseType.Long.type)
-							parseStr = "$L.getLong($L);";
+							parseStr = "$L.getLong($L)";
 						else if(ft == BaseType.String.type)
-							parseStr = "$L.getString($L);";
+							parseStr = "$L.getString($L)";
 						else
 							throw new IllegalArgumentException("Unknown type for field " + arg + ", while generating callMethod: " + api);
 					}
 					return parseStr;
 				};
 
+				String argVar = "arg_" + apiMethod.name + "_" + arg.name; //Need unique name since we are inside a switch
 				if(arg.isArray) {
-					method.addStatement("$L[] arg$L = new $L[];", argClass, arg.name)
-					.beginControlFlow("for(int index = 0; index < args.length(); index++)")
-					.addStatement("arg$L[index] = " + getParseStr.apply(null), argClass, arg.name, "args.getJSONArray(" + argIndex + ")", "index")
+					method.addStatement("argArray = args.getJSONArray(" + argIndex + ")")
+					.addStatement("$L[] $L = new $L[argArray.length()]", argClass, argVar, argClass)
+					.beginControlFlow("for(int index = 0; index < argArray.length(); index++)")
+					.addStatement("$L[index] = " + getParseStr.apply(null), argVar, "argArray", "index")
 					.endControlFlow();
 				} else
-					method.addStatement("$L arg$L = " + getParseStr.apply(null), argClass, arg.name, "args", argIndex);
+					method.addStatement("$L $L = " + getParseStr.apply(null), argClass, argVar, "args", argIndex);
 				
 				argIndex++;
 			}
 
 			//Call method
-
-			method.addStatement("break;");
+			//TODO
+			
+			//TODO: Generate return statement
+			method.addStatement("return $S", "");
 
 		}
 		method.endControlFlow();
+		
+		//TODO: Handle reaching this point(Unknown method)
+		method.addStatement("throw new $T(this, methodName, $S, method)", CallMethodException.class, "Unknown method");
 		
 		return method.build();
 	}

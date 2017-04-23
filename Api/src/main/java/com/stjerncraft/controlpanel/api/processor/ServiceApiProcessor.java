@@ -91,7 +91,7 @@ class ServiceApiProcessor {
 		
 		//Return type
 		TypeMirror returnType = method.getReturnType();
-		FieldType returnFieldType = FieldCheck.getActualFieldType(returnType);
+		FieldType returnFieldType = FieldCheck.getActualFieldType(returnType, dataObjectProc.getParsedDataObjects());
 		if(!FieldCheck.isValidType(dataObjectProc.getParsedDataObjects(), returnType) || returnFieldType == null)
 			throw new IllegalArgumentException("[" + api.getName() + "] Method return type " + returnType + " is invalid for " + newMethod.name + " from " + element.getEnclosingElement());
 
@@ -100,16 +100,15 @@ class ServiceApiProcessor {
 		//Parameters
 		for(VariableElement par : method.getParameters()) {
 			TypeMirror parType = par.asType();
-			FieldType parFieldType = FieldCheck.getActualFieldType(parType);
+			FieldType parFieldType = FieldCheck.getActualFieldType(parType, dataObjectProc.getParsedDataObjects());
 			if(!FieldCheck.isValidType(dataObjectProc.getParsedDataObjects(), parType) || parFieldType == null || parFieldType == BaseType.Void.type) {
 				throw new IllegalAccessError("[" + api.getName() + "] Method parameter " + par.getSimpleName() + " has invalid type " + par.asType() + 
 												" for " + element.getSimpleName() + " from " + element.getEnclosingElement());
 			}
-			procEnv.getMessager().printMessage(Kind.NOTE, "PARType: " + parFieldType);
 			Field parField = new Field(par.getSimpleName().toString(), FieldCheck.isArray(parType), parFieldType);
 			newMethod.addParameter(parField);
 		}
-		procEnv.getMessager().printMessage(Kind.NOTE, "METHOD: " + newMethod);
+
 		api.addMethod(newMethod);
 	}
 

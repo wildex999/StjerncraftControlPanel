@@ -62,6 +62,21 @@ public class Processor extends AbstractProcessor {
 			
 		
 		//Generate Source files
+		//For DataObjects:
+		//- Generate class for parsing and serializing DataObjects
+		DataObjectClassGenerator dataObjectClassGenerator = new DataObjectClassGenerator(dataObjectProc);
+		try {
+			for(DataObjectInfo dataObj : dataObjectProc.getParsedDataObjects().values()) {
+				if(generated.contains(dataObj))
+					continue;
+				dataObjectClassGenerator.generateClassForDataObject(processingEnv.getFiler(), dataObj);
+				msg.printMessage(Kind.NOTE, "Generated DataObject: " + dataObj.getName());
+				generated.add(dataObj);
+			}
+		} catch(IOException e) {
+			msg.printMessage(Kind.ERROR, "Failed to write DataObject Class: " + e.getMessage());
+		}
+		
 		//For API:
 		//- Generate js library
 		//- Generate proxy API, which will be given per user and include things like user data:

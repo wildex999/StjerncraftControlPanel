@@ -32,23 +32,28 @@ class FieldCheck {
 	
 	/**
 	 * Get the FieldType for the given field, also for arrays.
-	 * @param type
-	 * @return
+	 * @param type TypeMirror whose FieldType to figure out.
+	 * @param dataObjects A map of all known DataObjects. Can be null to ignore DataObjects.
+	 * @return Null if it was not able to determine a valid FieldType for the given type.
 	 */
-	public static FieldType getActualFieldType(TypeMirror type) {
-		//TODO: HANDLE DataObject(WHich is not a BaseType)
-		asd
-		BaseType fieldType = null;
-		if(FieldCheck.isArray(type)) {
-			fieldType = BaseType.getType(FieldCheck.getArrayComponentType(type).toString());
-			
-		}
+	public static FieldType getActualFieldType(TypeMirror type, Map<String, DataObjectInfo> dataObjects) {
+		FieldType fieldType = null;
+		if(FieldCheck.isArray(type))
+			type = FieldCheck.getArrayComponentType(type);
 		
-		//FieldType fieldType = FieldType.getType(type.toString());
+		BaseType baseType = BaseType.getType(type.toString());
+		if(baseType == null) {
+			//Might be a DataObject
+			DataObjectInfo dataObject = dataObjects.get(type.toString());
+			if(dataObject != null)
+				fieldType = new FieldType(dataObject.name, dataObject.name);
+		} else
+			fieldType = baseType.type;
+		
 		if(fieldType == null)
 			return null;
 		else
-			return fieldType.type;
+			return fieldType;
 	}
 	
 	public static boolean isValidType(Map<String, DataObjectInfo> dataObjects, TypeMirror type) {
