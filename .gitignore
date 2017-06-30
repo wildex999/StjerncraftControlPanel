@@ -27,3 +27,4 @@ Api/.classpath
 ModuleCore/node_modules/
 Core/.metadata/
 .metadata/
+target/

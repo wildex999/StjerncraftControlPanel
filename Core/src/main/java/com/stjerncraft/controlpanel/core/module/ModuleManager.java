@@ -31,9 +31,10 @@ public class ModuleManager implements ServiceModuleManager  {
 		//Make list of all active modules
 	}
 	
-	//Check for removed and added modules
+	//Check for removed and added modules in location
 	public void refreshModules() {
-		
+		if(config == null)
+			return;
 	}
 	
 	@Override

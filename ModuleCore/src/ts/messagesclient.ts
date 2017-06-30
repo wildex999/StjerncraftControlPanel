@@ -29,6 +29,8 @@ export default class MessagesClient {
 
         this.socket.onopen = () => {
             this.onConnected();
+            if(this.socket != null)
+                this.socket.send(JSON.stringify({messageId: "testId", messageData: {data: "lol"}}));
         }
 
         this.socket.onclose = (close: CloseEvent) => {

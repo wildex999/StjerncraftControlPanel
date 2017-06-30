@@ -10,16 +10,16 @@ import com.stjerncraft.controlpanel.core.client.IClient;
  * An agent might be a Minecraft Server, or any other remote(or local) host of Service Providers.
  */
 
-public interface IAgent {
+public interface IAgent<T extends ServiceProvider<? extends ServiceApi>, V extends ServiceApi> {
 	//The name of a given Agent should remain the same when possible, allowing the user to specify which agent to use by name.
 	//The Agent's name must be unique.
 	public String getName();
 	
-	public List<ServiceApi> getServiceApiList();
-	public List<ServiceApi> getServiceApiList(String apiName);
+	public List<V> getServiceApiList();
+	public List<V> getServiceApiList(String apiName);
 
-	public List<ServiceProvider<? extends ServiceApi>> getServiceProviders();
-	public List<ServiceProvider<? extends ServiceApi>> getServiceProviders(ServiceApi api);
+	public List<T> getServiceProviders();
+	public List<T> getServiceProviders(ServiceApi api);
 	
 	public boolean providesApi(ServiceApi api);
 	

@@ -8,3 +8,50 @@ subprojects {
 		jcenter()
 	}
 }
+
+def targetDir = "target"
+
+task copyModuleCore(type: Copy) {
+	evaluationDependsOn(":ModuleCore")
+	dependsOn(":ModuleCore:build")
+	from project(":ModuleCore").file("build")
+	into file("target/public")
+}
+
+task copyCore(type: Copy) {
+	evaluationDependsOn(":Core")
+	dependsOn(":Core:installDist")
+	
+	def installPath = project(":Core").buildDir.getAbsolutePath() + "/install/" + project(":Core").applicationName
+	from file(installPath)
+	into file(targetDir)
+}
+
+task copyBuild(type: Copy) {
+	dependsOn 'copyCore'
+	dependsOn 'copyModuleCore'
+}
+
+task build() {
+	dependsOn 'copyBuild'
+}
+
+task runServer(type: Exec) {
+	evaluationDependsOn(":Core")
+	dependsOn 'build'
+	
+	workingDir targetDir
+	
+	if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+    	commandLine 'cmd', '/c', 'bin\\' + project(":Core").applicationName + ".bat"
+	} else {
+	    commandLine "./ " + 'bin/' + project(":Core").applicationName
+	}
+}
+
+task clean() {
+	doLast {
+		println "TEST"
+		delete targetDir
+	}
+}

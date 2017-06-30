@@ -2,3 +2,8 @@ dependencies {
 	compile "com.squareup:javapoet:1.8.0"
 	compile "org.json:json:20160810"
 }
+
+jar {
+    baseName = 'StjernCraft-ControlPanel-Api'
+    version =  '0.0.1'
+}

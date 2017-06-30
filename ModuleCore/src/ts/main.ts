@@ -17,7 +17,7 @@ class Main {
             }
         });
         
-        //Get active modules from server(Which we have permission to load)
+        //Start session with the Module Manager, and get active modules from server(Which we have permission to load)
 
         //Wait for user settings from server(In response to connecting)
 

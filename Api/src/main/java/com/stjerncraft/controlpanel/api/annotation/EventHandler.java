@@ -7,12 +7,12 @@ package com.stjerncraft.controlpanel.api.annotation;
  * can also use these to decide whether to allow the client to receive any events.
  * 
  * The method must have a boolean return type. Return 'true' to indicate the event subscription was accepted, 'false' to deny. 
- * The return value is ignored if the client is unsubscribing.
+ * The return value is ignored(not sent) if the client is unsubscribing.
  * 
  * When any EventHandler method is called, it is possible to get IEventSubscription and EventAction from the IServiceManager.
  * 
  * Note: You can have multiple EventHandlers. 
- * It is also not necessary for them to really be event, you can also look at them as async methods.
+ * It is also not necessary for them to really be events, you can also look at them as async methods.
  * For example, a single-shot async method could simply unsubscribe the client after providing the requested data.
  * 
  */

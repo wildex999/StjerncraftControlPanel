@@ -10,9 +10,9 @@ import com.stjerncraft.controlpanel.core.api.ServiceApi;
 
 public class ServiceProvider<T extends ServiceApi> {
 	final protected List<T> apiList;
-	final protected IAgent agent;
+	final protected IAgent<? extends ServiceProvider<T>, T> agent;
 	
-	public ServiceProvider(IAgent agent, List<T> apiList) {
+	public ServiceProvider(IAgent<? extends ServiceProvider<T>, T> agent, List<T> apiList) {
 		this.apiList = apiList;
 		this.agent = agent;
 	}
@@ -21,7 +21,7 @@ public class ServiceProvider<T extends ServiceApi> {
 		return apiList;
 	}
 	
-	public IAgent getAgent() {
+	public IAgent<? extends ServiceProvider<T>, T> getAgent() {
 		return agent;
 	}
 }

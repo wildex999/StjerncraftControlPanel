@@ -22,7 +22,7 @@ import com.stjerncraft.controlpanel.core.client.IClient;
  * Agent for local Service Providers.
  */
 
-public class LocalAgent implements IAgent {
+public class LocalAgent implements IAgent<LocalServiceProvider, LocalServiceApi> {
 	protected String name;
 	
 	Map<Class<? extends IServiceProvider>, LocalServiceApi> apiRegister;
@@ -106,13 +106,13 @@ public class LocalAgent implements IAgent {
 	}
 	
 	@Override
-	public List<ServiceApi> getServiceApiList() {
+	public List<LocalServiceApi> getServiceApiList() {
 		return new ArrayList<>(apiRegister.values());
 	}
 
 	@Override
-	public List<ServiceApi> getServiceApiList(String apiName) {
-		List<ServiceApi> apiList = new ArrayList<>();
+	public List<LocalServiceApi> getServiceApiList(String apiName) {
+		List<LocalServiceApi> apiList = new ArrayList<>();
 		for(LocalServiceApi api : apiRegister.values()) {
 			if(Objects.equal(api.getName(), apiName))
 				apiList.add(api);
@@ -122,12 +122,12 @@ public class LocalAgent implements IAgent {
 	}
 
 	@Override
-	public List<ServiceProvider<? extends ServiceApi>> getServiceProviders() {
+	public List<LocalServiceProvider> getServiceProviders() {
 		return new ArrayList<>(serviceProviders.values());
 	}
 
 	@Override
-	public List<ServiceProvider<? extends ServiceApi>> getServiceProviders(ServiceApi api) {
+	public List<LocalServiceProvider> getServiceProviders(ServiceApi api) {
 		return new ArrayList<>(apiServiceProviders.get(api));
 	}
 
