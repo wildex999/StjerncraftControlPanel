@@ -11,5 +11,5 @@ node {
 
 task build(type: NpmTask) {
     //Build the javascript library
-    args = ['run', 'build']
+    //args = ['run', 'build']
 }

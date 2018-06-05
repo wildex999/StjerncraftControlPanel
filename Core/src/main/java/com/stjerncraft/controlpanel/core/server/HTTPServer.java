@@ -11,15 +11,16 @@ import static spark.Spark.webSocket;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
+import com.stjerncraft.controlpanel.agent.local.LocalServiceApi;
+import com.stjerncraft.controlpanel.agent.local.LocalServiceProvider;
 import com.stjerncraft.controlpanel.core.Core;
 import com.stjerncraft.controlpanel.core.module.ServiceModuleManager;
-import com.stjerncraft.controlpanel.core.service.LocalServiceApi;
-import com.stjerncraft.controlpanel.core.service.LocalServiceProvider;
 import com.stjerncraft.controlpanel.exceptions.MissingServiceException;
 
 import spark.Request;
@@ -31,6 +32,7 @@ public class HTTPServer {
 	protected short port;
 	protected Core core;
 	protected CoreWebSocket coreWebSocket;
+	protected AtomicBoolean isRunning;
 	
 	private ServiceModuleManager moduleManager;
 	
@@ -63,16 +65,29 @@ public class HTTPServer {
 		
 		awaitInitialization();
 		
+		get("/stop", (req, res) -> { stop(); return null; });
+		
 		//Authentication
 		before("/*", (req, res) -> handleAuthentication(req, res));
 		
 		//Modules
 		setupModules();
+		
+		isRunning.set(true);
 	}
 	
 	public void stop() {
 		logger.info("Shutting down HTTP Server.");
 		Spark.stop();
+		isRunning.set(false);
+	}
+	
+	public boolean isRunning() {
+		return isRunning.get();
+	}
+	
+	public void handleMessages() {
+		coreWebSocket.handleMessages();
 	}
 
 	private void setupModules() throws MissingServiceException  {
@@ -98,6 +113,7 @@ public class HTTPServer {
 		//If not valid, terminate the connection.
 		//If valid, set the user attribute to the authorized User object.
 		//TODO
+		//TODO: This must be thread safe!
 	}
 	
 	/**
@@ -108,6 +124,7 @@ public class HTTPServer {
 		
 		//If module name is given, return the requested file for the given module, or the module main js if no file requested.
 		//If client is not authenticated to access module, return 403, even if the module does not exist(To avoid scanning for installed modules)
+		//TODO: This must be thread safe!
 		return null;
 	}
 	

@@ -1,7 +1,11 @@
 subprojects {
-	configure([project(":Api"), project(":Core")]) {
+	configure([project(":Api"), project(":Core"), project(":Common"), project(":ModuleCoreGWT"), project(":Agent")]) {
 		apply plugin: 'java'
 		apply plugin: 'eclipse'
+	}
+	
+	dependencies {
+		testCompile 'junit:junit:4.12'
 	}
 
 	repositories {
@@ -12,9 +16,9 @@ subprojects {
 def targetDir = "target"
 
 task copyModuleCore(type: Copy) {
-	evaluationDependsOn(":ModuleCore")
-	dependsOn(":ModuleCore:build")
-	from project(":ModuleCore").file("build")
+	evaluationDependsOn(":ModuleCoreGWT")
+	dependsOn(":ModuleCoreGWT:compileGwt")
+	from project(":ModuleCoreGWT").file("war")
 	into file("target/public")
 }
 
@@ -41,7 +45,6 @@ task runServer(type: Exec) {
 	dependsOn 'build'
 	
 	workingDir targetDir
-	
 	if (System.getProperty('os.name').toLowerCase().contains('windows')) {
     	commandLine 'cmd', '/c', 'bin\\' + project(":Core").applicationName + ".bat"
 	} else {
@@ -51,7 +54,6 @@ task runServer(type: Exec) {
 
 task clean() {
 	doLast {
-		println "TEST"
 		delete targetDir
 	}
 }

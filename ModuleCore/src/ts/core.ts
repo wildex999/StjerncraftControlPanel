@@ -1,4 +1,7 @@
 import MessagesClient from "./messagesclient";
+import MessageVersion from "./messages/MessageVersion";
+
+let CORE_VERSION = 1; //Should match the Server Core version(TODO: Auto generate?)
 
 interface ConnectionHandler {
     onConnected();
@@ -22,7 +25,12 @@ export default class Core {
 
         console.log("Connecting to " + server + ":" + port);
         this.client = new MessagesClient(server, port);
-        this.client.onConnected = function () {
+        this.client.onConnected = () => {
+            if(this.client == null)
+                return;
+
+            //Send our Core Client version to the server, allowing it to verify we are compatible
+            this.client.sendMessage(new MessageVersion(CORE_VERSION));
             connectionHandler.onConnected();
         };
         this.client.onDisconnected = function (close: CloseEvent) {

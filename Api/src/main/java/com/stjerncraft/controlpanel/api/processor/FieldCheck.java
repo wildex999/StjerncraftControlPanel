@@ -50,7 +50,8 @@ class FieldCheck {
 		} else
 			fieldType = baseType.type;
 		
-		if(fieldType == null)
+		
+		if(fieldType == null) 
 			return null;
 		else
 			return fieldType;

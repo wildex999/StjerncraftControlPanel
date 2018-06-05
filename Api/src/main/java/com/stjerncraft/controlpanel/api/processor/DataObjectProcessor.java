@@ -34,8 +34,10 @@ class DataObjectProcessor {
 	 * @param env
 	 */
 	protected void preParseDataObjects(RoundEnvironment env) {
-		for(TypeElement el : getDataObjects(env))
-			dataObjects.put(el.getQualifiedName().toString(), null);
+		for(TypeElement el : getDataObjects(env)) {
+			String name = el.getQualifiedName().toString();
+			dataObjects.put(name, new DataObjectInfo(name));
+		}
 	}
 	
 	public void parseDataObjects(RoundEnvironment env) {
@@ -46,11 +48,7 @@ class DataObjectProcessor {
 			checkValidDataObject(el);
 			
 			DataObjectInfo dataObject = dataObjects.get(el.getQualifiedName().toString());
-			if(dataObject == null) {
-				String name = el.getQualifiedName().toString();
-				dataObject = new DataObjectInfo(name);
-				dataObjects.put(name, dataObject);
-			}
+			assert dataObject != null;
 			
 			//Parse DataObject members
 			for(Element member : procEnv.getElementUtils().getAllMembers(el)) {
@@ -59,6 +57,9 @@ class DataObjectProcessor {
 				
 				parseDataObjectField(dataObject, member);
 			}
+			
+			//Fields from a class is not guaranteed to be in any order, so we have to enforce the same order on both serialize and deserialize.
+			dataObject.sortFieldsByName();
 		}
 	}
 	
@@ -98,10 +99,6 @@ class DataObjectProcessor {
 		if(!hasPublicConstructor)
 			throw new IllegalArgumentException("[" + element.getQualifiedName() + "] @DataObject must contain a public default constructor!");
 		
-		//Can't be abstract
-		if(element.getModifiers().contains(Modifier.ABSTRACT))
-			throw new IllegalArgumentException("[" + element.getQualifiedName() + "] @DataObject can not be abstract!");
-		
 		//Can't be generic
 		if(!element.getTypeParameters().isEmpty())
 			throw new IllegalArgumentException("[" + element.getQualifiedName() + "] @DataClass can not be generic!");
@@ -111,8 +108,10 @@ class DataObjectProcessor {
 	protected static Set<TypeElement> getDataObjects(RoundEnvironment env) {
 		Set<TypeElement> elements = new HashSet<>();
 		for(Element el : env.getElementsAnnotatedWith(DataObject.class)) {
+			if(el.getModifiers().contains(Modifier.ABSTRACT))
+				continue; //Allow abstract classes to be used to inheritance of the annotation
 			if(el.getKind() != ElementKind.CLASS)
-				throw new IllegalArgumentException("[" + el.getSimpleName() + "] The annotation " + DataObject.class.getCanonicalName() + " can only be placed on a class! ");
+				throw new IllegalArgumentException("[" + el.getSimpleName() + "] The annotation " + DataObject.class.getCanonicalName() + " can only be placed on a class or interface! ");
 			elements.add((TypeElement)el);
 		}
 		

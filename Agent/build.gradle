@@ -1,0 +1,15 @@
+plugins {
+	id "net.ltgt.apt-eclipse" version "0.15"
+}
+
+jar {
+    baseName = 'StjernCraft-ControlPanel-Agent'
+    version =  '0.0.1'
+}
+
+dependencies {
+	compile project(":Api")
+	testAnnotationProcessor project(":Api")
+	
+	compile "com.google.guava:guava:20.0"
+}

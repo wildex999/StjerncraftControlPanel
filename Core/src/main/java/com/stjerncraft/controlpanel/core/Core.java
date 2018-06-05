@@ -10,29 +10,166 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.stjerncraft.controlpanel.agent.IAgent;
+import com.stjerncraft.controlpanel.agent.IAgentListener;
+import com.stjerncraft.controlpanel.agent.IRemoteClient;
+import com.stjerncraft.controlpanel.agent.ISession;
+import com.stjerncraft.controlpanel.agent.InvalidUUIDException;
+import com.stjerncraft.controlpanel.agent.ServiceApi;
+import com.stjerncraft.controlpanel.agent.ServiceProvider;
+import com.stjerncraft.controlpanel.agent.local.LocalAgent;
+import com.stjerncraft.controlpanel.agent.local.LocalServiceApi;
+import com.stjerncraft.controlpanel.agent.local.LocalServiceProvider;
 import com.stjerncraft.controlpanel.api.IServiceApiGenerated;
 import com.stjerncraft.controlpanel.api.IServiceProvider;
 import com.stjerncraft.controlpanel.api.util.Generated;
-import com.stjerncraft.controlpanel.core.api.ServiceApi;
-import com.stjerncraft.controlpanel.core.service.LocalAgent;
-import com.stjerncraft.controlpanel.core.service.LocalServiceApi;
-import com.stjerncraft.controlpanel.core.service.LocalServiceProvider;
 
 public class Core {
 	private static final Logger logger = LoggerFactory.getLogger(Core.class);
 	
 	Map<String, IAgent<? extends ServiceProvider<? extends ServiceApi>, ? extends ServiceApi>> agents;
+	
+	//Map UUID -> instance
+	Map<String, IAgent<? extends ServiceProvider<? extends ServiceApi>, ? extends ServiceApi>> uuidAgents;
+	Map<String, ServiceApi> uuidApis;
+	Map<String, ServiceProvider<? extends ServiceApi>> uuidProviders;
+	
+	Map<Integer, ISession> sessions; //Key: session ID
+	int sessionIdCounter;
+	
+	Set<IRemoteClient> clients;
+	
+	IAgentListener agentListener;
 
 	public Core() {
 		agents = new HashMap<>();
+		uuidAgents = new HashMap<>();
+		sessions = new HashMap<>();
+		clients = new HashSet<>();
+		
+		sessionIdCounter = 0;
+		
+		agentListener = new IAgentListener() {
+
+			@Override
+			public void onApiAdded(ServiceApi api) throws InvalidUUIDException {
+				String uuid = api.getUuid();
+				if(!isUuidValid(uuid))
+					throw new InvalidUUIDException(uuid);
+				if(uuidApis.containsKey(uuid))
+					throw new InvalidUUIDException(uuid, true);
+			}
+
+			@Override
+			public void onApiRemoved(ServiceApi api) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onProviderAdded(ServiceProvider<? extends ServiceApi> provider) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onProviderRemoved(ServiceProvider<? extends ServiceApi> provider) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
 	}
 	
-	public void addAgent(IAgent<? extends ServiceProvider<? extends ServiceApi>, ? extends ServiceApi> agent) {
+	/**
+	 * Create a new session id.
+	 * 
+	 * Note: It this reaches a negative number, it will overflow and start from 0.
+	 * On overflow it might start getting collisions, which could lead to performance problems.
+	 * @return
+	 */
+	public int getNextSessionId() {
+		int id = sessionIdCounter++;
+		if(id < 0) {
+			logger.warn("Reached max session ID, restarting from 0. Server restart is recommended!");
+			sessionIdCounter = 0;
+			id = getNextSessionId();
+		}
+		if(sessions.containsKey(id)) {
+			//If we get too many conflicts we might at some point hit an stack overflow.
+			//This should in theory never happen, unless we have a ridiculous amount of active sessions.
+			logger.warn("Hit session ID conflict at " + id + ". Server restart is recommended!");
+			id = getNextSessionId();
+		}
+		
+		return 0;
+	}
+	
+	public void startSession() {
+		
+	}
+	
+	public void addSession(ISession newSession) {
+		if(sessions.containsKey(newSession.getSessionId()))
+			logger.error("Adding session which conflicts with existing session: " + newSession.getSessionId());
+		
+		sessions.put(newSession.getSessionId(), newSession);
+	}
+	
+	public ISession getSession(int sessionId) {
+		return sessions.get(sessionId);
+	}
+	
+	/**
+	 * End the session and remove it from the list of sessions.
+	 * @param sessionId
+	 * @param reason
+	 * @return True if the session was ended, false if it was not found
+	 */
+	public boolean endSession(int sessionId, String reason) {
+		ISession s = sessions.get(sessionId);
+		if(s == null)
+			return false;
+		
+		s.endSession(reason);
+		return true;
+	}
+	
+	public void addAgent(IAgent<? extends ServiceProvider<? extends ServiceApi>, ? extends ServiceApi> agent) throws InvalidUUIDException {
+		String uuid = agent.getId();
+		if(!isUuidValid(uuid))
+			throw new InvalidUUIDException(uuid);
+		if(uuidAgents.containsKey(uuid))
+			throw new InvalidUUIDException(uuid, true);
+		
 		agents.put(agent.getName(), agent);
+		uuidAgents.put(uuid, agent);
 	}
 	
-	public IAgent<? extends ServiceProvider<? extends ServiceApi>, ? extends ServiceApi> getAgent(String name) {
+	/**
+	 * Remove the given Agent.
+	 * This will remove any Service APIs and Service Providers managed by this agent!
+	 * Any session with the Service Providers will be ended!
+	 * @return
+	 */
+	public boolean removeAgent(IAgent<? extends ServiceProvider<? extends ServiceApi>, ? extends ServiceApi> agent) {
+		if(!agents.containsKey(agent.getId()))
+			return false;
+		
+		//End any sessions with the Service Providers
+		for(ISession session : agent.getSessions())
+			session.endSession("Agent is being removed");
+		
+		agents.remove(agent.getName());
+		uuidAgents.remove(agent.getId());
+		return true;
+	}
+	
+	public IAgent<? extends ServiceProvider<? extends ServiceApi>, ? extends ServiceApi> getAgentByName(String name) {
 		return agents.get(name);
+	}
+	
+	public IAgent<? extends ServiceProvider<? extends ServiceApi>, ? extends ServiceApi> getAgentByUuid(String uuid) {
+		return uuidAgents.get(uuid);
 	}
 	
 	public List<IAgent<? extends ServiceProvider<? extends ServiceApi>, ? extends ServiceApi>> getAgents() {
@@ -162,6 +299,12 @@ public class Core {
 		}
 		
 		return null;
+	}
+	
+	private boolean isUuidValid(String uuid) {
+		if(uuid == null || uuid.trim().length() != 36) //36 with dashes
+			return false;
+		return true;
 	}
 
 }

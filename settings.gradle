@@ -1,1 +1,1 @@
-include ":Api", ":Core", "ModuleCore"
+include ":Api", ":Core", ":ModuleCoreGWT", ":Common", ":Agent"

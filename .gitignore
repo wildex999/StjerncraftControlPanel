@@ -28,3 +28,13 @@ ModuleCore/node_modules/
 Core/.metadata/
 .metadata/
 target/
+ModuleCoreGWT/gwt-unitCache/
+ModuleCoreGWT/war/modulecore/
+ModuleCoreGWT/war/WEB-INF/deploy/modulecore/rpcPolicyManifest/manifest.txt
+ModuleCoreGWT/war/WEB-INF/deploy/modulecore/symbolMaps/1C26667CA1B76E4814C6A7924BF002D3.symbolMap
+ModuleCoreGWT/war/WEB-INF/deploy/
+ModuleCoreGWT/build/
+Common/build/
+Agent/build/
+*.factorypath
+*.classpath

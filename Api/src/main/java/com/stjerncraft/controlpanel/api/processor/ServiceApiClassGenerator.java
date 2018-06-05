@@ -1,7 +1,6 @@
 package com.stjerncraft.controlpanel.api.processor;
 
 import java.io.IOException;
-import java.util.function.Function;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Modifier;
@@ -24,12 +23,12 @@ import com.stjerncraft.controlpanel.api.exceptions.CallMethodException;
  * It will parse external method and event calls, and serialize the responses.
  * 
  * The goal is to turn a serialized JSON object into a native method call on the Service Provider implementation, 
- * without having to do reflection.
+ * without having to do reflection or writing special handling code manually.
  * A Service Manager should be able to just pass along strings to the right handler.
  * 
  * The API call is serialized into a JSON object, containing the method name and named arguments.
  * The arguments are serialized depending on their type, most going to either the native JSON type or strings.
- * Data Objects are serialized as inline JSON objects, containing it's own data, which is parsed by the Data Object Class.
+ * Data Objects are serialized as inline JSON objects, containing it's own data, which is handled by the generated Data Object Class.
  */
 
 class ServiceApiClassGenerator {
@@ -70,7 +69,7 @@ class ServiceApiClassGenerator {
 			.returns(String.class)
 			.addParameter(IServiceProvider.class, "serviceProvider")
 			.addParameter(String.class, "method")
-			.addStatement("return callMethod(($L)serviceProvider, method)", api.name)
+			.addStatement("return callMethod(($L)serviceProvider, method)", api.name.replaceAll("\\$", "."))
 			.build();
 		MethodSpec callDirectMethod = generateCallMethod(api);
 		
@@ -96,12 +95,18 @@ class ServiceApiClassGenerator {
 	 * {
 	 *     "methodName": ["strArg", 10, {"field1": "strField"}, [1, 2, 3]]
 	 * }
+	 * 
+	 * The return value will be a serialized JSONArray. The JSONArray will only contain a single entry(Either a value or an array) for now.
+	 * 7 -> [7]
+	 * [7, 5, 3] -> [[7, 5, 3]]
+	 * "Str" -> ["Str"]
+	 * Inst -> [{"field1", "field2", [], 1}]
 	 */
 	protected MethodSpec generateCallMethod(ServiceApiInfo api) {
 		MethodSpec.Builder method = MethodSpec.methodBuilder("callMethod")
 			.addModifiers(Modifier.PUBLIC)
 			.returns(String.class)
-			.addParameter(ClassName.bestGuess(api.name), "serviceProvider")
+			.addParameter(ClassName.bestGuess(api.name.replaceAll("\\$", ".")), "serviceProvider")
 			.addParameter(String.class, "method");
 				
 				
@@ -115,7 +120,6 @@ class ServiceApiClassGenerator {
 			.addStatement("$T args = obj.getJSONArray(methodName)", JSONArray.class);
 				
 		//Method Switch
-		method.addStatement("$T argArray;", JSONArray.class);
 		method.beginControlFlow("switch(methodName)");
 		for(Method apiMethod : api.methods) {
 			method.addCode("case $S:\n", apiMethod.name)
@@ -124,58 +128,35 @@ class ServiceApiClassGenerator {
 			.endControlFlow();
 
 			//Parse arguments
-			int argIndex = 0;
-			for(Field arg : apiMethod.parameters) {
-				if(arg.fieldType == null)
-					throw new IllegalArgumentException("Null fieldType at field: " + arg + " in " + apiMethod + " while parsing api " + api);
-				String argClass = arg.fieldType.getCanonicalName();
-
-				//Will return the string for parsing an argument value
-				//Ex: "(short)$L.getInt($L)
-				//Ex: "CustomDataClass.parse($L.getJSONObject($L))"
-				Function<Void, String> getParseStr = (Void v) -> {
-					String parseStr;
-					if(dataObjects.getParsedDataObjects().containsKey(argClass))
-						parseStr = argClass + ApiStrings.DATAOBJECTSUFFIX + ".parse($L.getJSONObject($L))";
-					else {
-						//Check base types
-						FieldType ft = arg.fieldType;
-						if(ft == BaseType.Boolean.type)
-							parseStr = "$L.getBoolean($L)";
-						else if(ft == BaseType.Byte.type || ft == BaseType.Character.type || 
-								ft == BaseType.Short.type || ft == BaseType.Integer.type)
-							parseStr = "(" + arg.fieldType.getPrimitiveName() + ")$L.getInt($L)"; //ex: (short)arg.getInt(index);
-						else if(ft == BaseType.Double.type || ft == BaseType.Float.type)
-							parseStr = "(" + arg.fieldType.getPrimitiveName() + ")$L.getDouble($L)";
-						else if(ft == BaseType.Long.type)
-							parseStr = "$L.getLong($L)";
-						else if(ft == BaseType.String.type)
-							parseStr = "$L.getString($L)";
-						else
-							throw new IllegalArgumentException("Unknown type for field " + arg + ", while generating callMethod: " + api);
-					}
-					return parseStr;
-				};
-
-				String argVar = "arg_" + apiMethod.name + "_" + arg.name; //Need unique name since we are inside a switch
-				if(arg.isArray) {
-					method.addStatement("argArray = args.getJSONArray(" + argIndex + ")")
-					.addStatement("$L[] $L = new $L[argArray.length()]", argClass, argVar, argClass)
-					.beginControlFlow("for(int index = 0; index < argArray.length(); index++)")
-					.addStatement("$L[index] = " + getParseStr.apply(null), argVar, "argArray", "index")
-					.endControlFlow();
-				} else
-					method.addStatement("$L $L = " + getParseStr.apply(null), argClass, argVar, "args", argIndex);
-				
-				argIndex++;
+			String[] varNames;
+			try {
+				varNames = Parse.parseVariables(apiMethod.parameters, "args", method, dataObjects, apiMethod.name);
 			}
-
-			//Call method
-			//TODO
+			catch(IllegalArgumentException e) {
+				throw new IllegalArgumentException("Error while generating variable parser in callMethod for " + apiMethod + " while parsing api " + api, e);
+			}
 			
-			//TODO: Generate return statement
-			method.addStatement("return $S", "");
+			String argsString = String.join(", ", varNames);
 
+			//Call method & serialize return value
+			String retVal = "ret_" + apiMethod.name; //Need unique name since we are inside a switch
+			String retValJson = retVal + "_json";
+			if(apiMethod.isReturnArray) {
+				method.addStatement("$L[] $L = serviceProvider.$L($L)", apiMethod.returnType.getCanonicalName(), retVal, apiMethod.name, argsString);
+			} else if(apiMethod.returnType != BaseType.Void.type) {
+				method.addStatement("$L $L = serviceProvider.$L($L)", apiMethod.returnType.getCanonicalName(), retVal, apiMethod.name, argsString);
+			} else {
+				method.addStatement("serviceProvider.$L($L)", apiMethod.name, argsString);
+				method.addStatement("return null");
+			}
+			
+			//Serialize
+			if(apiMethod.isReturnArray || apiMethod.returnType != BaseType.Void.type) {
+				method.addStatement("$T $L = new $T()", JSONArray.class, retValJson, JSONArray.class);
+				Serialize.serializeVariable(apiMethod.returnType, retVal, apiMethod.isReturnArray, method, dataObjects, retValJson);
+				method.addStatement("return $L.toString()", retValJson);
+			}
+			
 		}
 		method.endControlFlow();
 		

@@ -8,6 +8,9 @@ class Main {
         core.connect("localhost", 8080, new class {
             onConnected() {
                 console.log("Connected");
+
+                //Get for list of Service APIs
+                
             }
             onDisconnected(code: number, reason: string, wasClean: boolean) {
                 console.log("Disconnected: " + code + " | " + reason + " | " + wasClean);

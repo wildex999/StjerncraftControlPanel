@@ -1,7 +1,4 @@
-interface Message {
-    messageType: string;
-    message: any;
-}
+import { Message } from "./message"
 
 type MessageHandler = (message: Message) => any;
 
@@ -29,13 +26,11 @@ export default class MessagesClient {
 
         this.socket.onopen = () => {
             this.onConnected();
-            if(this.socket != null)
-                this.socket.send(JSON.stringify({messageId: "testId", messageData: {data: "lol"}}));
-        }
+        };
 
         this.socket.onclose = (close: CloseEvent) => {
             this.onDisconnected(close);
-        }
+        };
 
         this.socket.onmessage = () => this.onMessage;
     }
@@ -70,14 +65,14 @@ export default class MessagesClient {
             //Parse the message and call the relevant handler
             try {
                 let msg: Message = JSON.parse(message.data);
-                if(!msg.messageType)
-                    throw new Error("Message is missing expected data: " + msg);
+                if(!msg.messageId)
+                    throw new Error("Message is missing messageId: " + msg);
 
-                let handler = this.messageHandlers[msg.messageType];
+                let handler = this.messageHandlers[msg.messageId];
                 if(handler)
                     handler(msg);
                 else
-                    this.onMessageMissingHandler(msg.messageType);
+                    this.onMessageMissingHandler(msg.messageId);
             } catch(e) {
                 this.onParseMessageFailed(e);
             }
@@ -103,11 +98,18 @@ export default class MessagesClient {
     }
 
     /**
-     * Set the handler for a given message type.
-     * @param messageType 
+     * Set the handler for a given message.
+     * @param messageId The string identifier for the message type
      * @param handler 
      */
-    setHandler(messageType: string, handler: MessageHandler) {
-        this.messageHandlers[messageType] = handler;
+    setHandler(messageId: string, handler: MessageHandler) {
+        this.messageHandlers[messageId] = handler;
+    }
+
+    sendMessage(message: Message) {
+        if(this.socket == null)
+            return;
+
+        this.socket.send(JSON.stringify(message));
     }
 }

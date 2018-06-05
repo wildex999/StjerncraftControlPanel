@@ -23,9 +23,11 @@
   },
   "dependencies": {
     "@types/jquery": "^2.0.41",
+    "@types/node-uuid": "0.0.28",
     "@types/requirejs": "^2.1.28",
     "jquery": "^3.1.1",
     "requirejs": "^2.3.2",
-    "typescript": "^2.2.2"
+    "typescript": "^2.2.2",
+    "uuid": "^3.1.0"
   }
 }

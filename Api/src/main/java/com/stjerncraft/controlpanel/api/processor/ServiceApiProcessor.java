@@ -16,7 +16,6 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import javax.tools.Diagnostic.Kind;
 
 import com.stjerncraft.controlpanel.api.IServiceProvider;
 import com.stjerncraft.controlpanel.api.annotation.ServiceApi;
@@ -38,6 +37,9 @@ class ServiceApiProcessor {
 	public void parseServiceApis(RoundEnvironment env) {
 		for(TypeElement el : getServiceApis(env)) {
 			checkValidServiceApi(el);
+			
+			if(el.getEnclosingElement() != null && el.getEnclosingElement().getKind() != ElementKind.PACKAGE)
+				throw new IllegalArgumentException("[" + el.getQualifiedName() + "] The Service API must be a root element inside a package, not an inner element!");
 			
 			String name = el.getQualifiedName().toString();
 			ServiceApiInfo serviceApi = apis.get(name);

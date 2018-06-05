@@ -1,7 +1,7 @@
 package com.stjerncraft.controlpanel.api.processor;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A Method exists in a Service API, and describes the methods which can be called on it.
@@ -9,7 +9,7 @@ import java.util.Set;
 
 class Method {
 	protected String name;
-	protected Set<Field> parameters = new HashSet<Field>();
+	protected List<Field> parameters = new ArrayList<Field>(); //Use list to retain order
 	
 	protected FieldType returnType;
 	protected boolean isReturnArray;
@@ -19,6 +19,9 @@ class Method {
 	}
 	
 	public void addParameter(Field par) {
+		if(parameters.contains(par))
+			return;
+		
 		parameters.add(par);
 	}
 	
