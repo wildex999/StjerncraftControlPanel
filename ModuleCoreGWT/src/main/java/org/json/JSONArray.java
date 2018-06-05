@@ -26,6 +26,15 @@ public class JSONArray {
 		return arr.size();
 	}
 	
+	public String getString(int index) throws JSONException {
+		JSONValue value = arr.get(index);
+		JSONString str = value.isString();
+		if(str == null)
+			throw new JSONException("JSONArray[" + index + "] is not a String.");
+		
+		return str.stringValue();
+	}
+	
 	public int getInt(int index) throws JSONException {
 		JSONValue value = arr.get(index);
 		JSONNumber number = value.isNumber();
