@@ -7,13 +7,10 @@ import java.nio.file.Path;
 
 import com.google.common.base.Objects;
 import com.google.common.io.Files;
-import com.stjerncraft.controlpanel.api.annotation.DataObject;
+import com.stjerncraft.controlpanel.common.ModuleInfo;
 
-@DataObject
-public class Module {
-	public String name;
-	public int version;
-	
+
+public class Module extends ModuleInfo {	
 	private ModuleConfig config;
 	private Path location;
 	
@@ -21,8 +18,7 @@ public class Module {
 	public Module() {}
 	
 	public Module(String name, int version) {
-		this.name = name;
-		this.version = version;
+		super(name, version);
 	}
 	
 	/**

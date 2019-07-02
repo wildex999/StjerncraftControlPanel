@@ -7,9 +7,23 @@ jar {
     version =  '0.0.1'
 }
 
+sourceSets {
+	main {
+		java {}
+	}
+	api {
+		java {
+			srcDir "src/api/java"
+			include "com/stjerncraft/controlpanel/agent/"
+		}
+	}
+}
+sourceSets.main.compileClasspath += sourceSets.api.output
+
 dependencies {
 	compile project(":Api")
 	testAnnotationProcessor project(":Api")
+	compile project(":Common")
 	
 	compile "com.google.guava:guava:20.0"
 }

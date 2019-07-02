@@ -1,21 +1,26 @@
 package com.stjerncraft.controlpanel.core.module;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.stjerncraft.controlpanel.api.IServiceManager;
+import com.stjerncraft.controlpanel.api.IServiceProvider;
+import com.stjerncraft.controlpanel.common.ModuleInfo;
+import com.stjerncraft.controlpanel.common.api.ModuleManagerApi;
 
-public class ModuleManager implements ServiceModuleManager  {
+public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 
 	private ModuleManagerConfig config;
-	private List<Module> modules;
-	private List<Module> activeModules;
+	private Map<String, Module> modules;
+	private Map<String, Module> activeModules;
 	
 	IServiceManager serviceManager;
 	
 	public ModuleManager() {
-		modules = new ArrayList<>();
-		activeModules = new ArrayList<>();
+		modules = new HashMap<>();
+		activeModules = new HashMap<>();
 	}
 	
 	/**
@@ -48,56 +53,60 @@ public class ModuleManager implements ServiceModuleManager  {
 	}
 
 	@Override
-	public Module[] getAllModules() {
+	public ModuleInfo[] getAllModules() {
 		//TODO: Check permission of user, and filter the list
-		return modules.toArray(new Module[modules.size()]);
+		return modules.values().toArray(new ModuleInfo[modules.size()]);
 	}
 
 	@Override
-	public Module[] getActiveModules() {
+	public ModuleInfo[] getActiveModules() {
 		//TODO: Check permission of user, and filter the list
-		return activeModules.toArray(new Module[activeModules.size()]);
+		return activeModules.values().toArray(new ModuleInfo[activeModules.size()]);
 	}
 
 	@Override
-	public boolean activateModule(Module module) {
+	public boolean activateModule(ModuleInfo module) {
 		//TODO: Check if user has permission to activate the module
-		if(activeModules.contains(module))
+		String id = module.getId();
+		Module storedModule = modules.get(id);
+		if(storedModule == null)
+			return false;
+		if(activeModules.containsKey(id))
 			return false;
 		
-		activeModules.add(module);
+		activeModules.put(id, storedModule);
 		
 		return true;
 	}
 
 	@Override
-	public Module[] activateModules(Module[] modules) {
-		List<Module> failed = new ArrayList<>();
+	public ModuleInfo[] activateModules(ModuleInfo[] modules) {
+		List<ModuleInfo> failed = new ArrayList<>();
 		
-		for(Module module : modules) {
+		for(ModuleInfo module : modules) {
 			if(!activateModule(module))
 				failed.add(module);
 		}
 		
-		return failed.toArray(new Module[failed.size()]);
+		return failed.toArray(new ModuleInfo[failed.size()]);
 	}
 
 	@Override
-	public boolean deactivateModule(Module module) {
+	public boolean deactivateModule(ModuleInfo module) {
 		//TODO: Check if the user has permission to deactivate the module
-		return activeModules.remove(module);
+		return activeModules.remove(module.getId()) != null;
 	}
 
 	@Override
-	public Module[] deactivateModules(Module[] modules) {
-		List<Module> failed = new ArrayList<>();
+	public ModuleInfo[] deactivateModules(ModuleInfo[] modules) {
+		List<ModuleInfo> failed = new ArrayList<>();
 		
-		for(Module module : modules) {
+		for(ModuleInfo module : modules) {
 			if(!deactivateModule(module))
 				failed.add(module);
 		}
 		
-		return failed.toArray(new Module[failed.size()]);
+		return failed.toArray(new ModuleInfo[failed.size()]);
 	}
 
 	@Override

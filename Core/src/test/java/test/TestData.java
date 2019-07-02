@@ -11,12 +11,17 @@ import com.stjerncraft.controlpanel.api.util.Generated;
 
 @DataObject
 class Data {
+	public enum TestEnum {
+		A, B, C;
+	}
+	
 	public int a;
 	public Integer b;
 	public String t;
 	public Float[] tt;
 	public DataOther other;
 	int priv;
+	public TestEnum en;
 	
 	public Data() {}
 }
@@ -49,6 +54,7 @@ public class TestData {
 		testObj.other.a = 1;
 		testObj.other.b = "lol";
 		testObj.priv = 44;
+		testObj.en = Data.TestEnum.B;
 		
 		
 		IDataObjectGenerated<Data> dataGenerated = Generated.getGeneratedDataObject(Data.class);
@@ -70,6 +76,7 @@ public class TestData {
 		assertEquals(4, obj.tt[3], 0.1);
 		assertEquals(0, obj.priv);
 		assertNull(obj.other.nullOther);
+		assertEquals(Data.TestEnum.B, obj.en);
 	}
 
 }

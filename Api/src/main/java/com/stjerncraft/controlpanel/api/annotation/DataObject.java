@@ -12,10 +12,11 @@ import java.lang.annotation.Target;
  * 
  * 
  * - Only public fields are considered part of the data object.
- * - All public field types must either be a primitive(int, Integer, String etc.) or another Data Object.
+ * - All public field types must either be a primitive(int, Integer, String etc.), an Enum, or another Data Object.
  *   Can also be 1D Arrays of the same types.
  * - Methods are ignored.
  * - Must contain a public default constructor(parameterless)..
+ *   An inherited class(Not containing @DataObject) will be ignored if missing a default constructor.
  * - Can not use generics(For now).
  * - Abstract classes are ignored(But the annotation is inherited)
  * 
@@ -24,4 +25,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.CLASS)
 @Inherited
-public @interface DataObject {}
+public @interface DataObject {
+	boolean inherit() default true;
+}

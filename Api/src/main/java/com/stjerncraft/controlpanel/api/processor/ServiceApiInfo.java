@@ -26,6 +26,15 @@ class ServiceApiInfo {
 		methods.add(method);
 	}
 	
+	public Method getMethodWithName(String simpleName) {
+		for(Method method : methods) {
+			if(method.name.equals(simpleName))
+				return method;
+		}
+		
+		return null;
+	}
+	
 	@Override
 	public String toString() {
 		return "ServiceApiInfo: " + name + " | " + version;

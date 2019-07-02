@@ -28,7 +28,9 @@ public class Parse {
 		//Ex: "CustomDataClass.parse($L.getJSONObject($L))"
 		Function<Void, String> getParseStr = (Void v) -> {
 			String parseStr;
-			if(dataObjects.getParsedDataObjects().containsKey(argClass))
+			if(arg.fieldType.isEnum)
+				parseStr = argClass + ".valueOf($L.getString($L))";
+			else if(dataObjects.getParsedDataObjects().containsKey(argClass))
 				parseStr = argClass + ApiStrings.DATAOBJECTSUFFIX + ".parseJson($L.getJSONArray($L))";
 			else {
 				//Check base types

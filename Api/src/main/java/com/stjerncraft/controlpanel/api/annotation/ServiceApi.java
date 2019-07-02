@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * The API name will become the fully qualified path to the interface with this annotation.
  * 
  * - Must be an interface.
- * - Must extend ServiceProvider.
+ * - The class implementing the API must also implement ServiceProvider.
  * - Can not be generic(For now).
  * - Only public methods are considered part of the API.
  * - Argument and return types must be either primitives(int, Double, String etc...) or a Data Object.
@@ -19,7 +19,7 @@ import java.lang.annotation.Target;
  */
 
 @Target(ElementType.TYPE)
-@Retention(RetentionPolicy.CLASS)
+@Retention(RetentionPolicy.RUNTIME) //Allow ServiceApi interfaces to be detected
 public @interface ServiceApi {
 	int version();
 }

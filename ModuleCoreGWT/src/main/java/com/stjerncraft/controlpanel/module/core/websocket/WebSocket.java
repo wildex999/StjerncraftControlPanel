@@ -172,9 +172,13 @@ public class WebSocket {
 				self.@com.stjerncraft.controlpanel.module.core.websocket.WebSocket::onmessage(Lcom/google/gwt/typedarrays/shared/ArrayBuffer;)(event.data);
 			if(typeof(event.data) === "string")
 				self.@com.stjerncraft.controlpanel.module.core.websocket.WebSocket::onmessage(Ljava/lang/String;)(event.data);
-			//if(event.data instanceof Blob)
-			//We just pass along anything else as a JavaScriptObject, including Blob for now.
-			self.@com.stjerncraft.controlpanel.module.core.websocket.WebSocket::onmessage(Lcom/google/gwt/core/client/JavaScriptObject;)(event.data);
+			else {
+				//if(event.data instanceof Blob)
+				//We just pass along anything else as a JavaScriptObject, including Blob for now.
+				self.@com.stjerncraft.controlpanel.module.core.websocket.WebSocket::onmessage(Lcom/google/gwt/core/client/JavaScriptObject;)(event.data);
+			}
+			
+
 		}
 	}-*/;
 	

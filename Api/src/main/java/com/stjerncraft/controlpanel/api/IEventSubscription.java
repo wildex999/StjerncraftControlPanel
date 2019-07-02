@@ -1,13 +1,23 @@
 package com.stjerncraft.controlpanel.api;
 
+/**
+ * Event Subscription stored by the Agent, providing the ability to send event data, and end the subscription.
+ */
 public interface IEventSubscription {
 	/**
-	 * Unsubscribe the client from the event
+	 * Get the Client with this subscription
+	 * @return
 	 */
-	public void unsubscribe();
+	public IClient getClient();
 	
 	/**
-	 * Send an event to the subscribed user
+	 * End this subscription
 	 */
-	public void sendEvent();
+	public void end();
+	
+	/**
+	 * Send an event to the subscribed user.
+	 * @param data The DataObject to send. Should not be modified after passing to sendEvent!
+	 */
+	public void sendEvent(Object data);
 }

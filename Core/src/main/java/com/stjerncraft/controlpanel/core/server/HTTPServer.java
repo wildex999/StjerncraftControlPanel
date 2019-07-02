@@ -19,8 +19,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Objects;
 import com.stjerncraft.controlpanel.agent.local.LocalServiceApi;
 import com.stjerncraft.controlpanel.agent.local.LocalServiceProvider;
+import com.stjerncraft.controlpanel.common.api.ModuleManagerApi;
 import com.stjerncraft.controlpanel.core.Core;
-import com.stjerncraft.controlpanel.core.module.ServiceModuleManager;
 import com.stjerncraft.controlpanel.exceptions.MissingServiceException;
 
 import spark.Request;
@@ -34,17 +34,19 @@ public class HTTPServer {
 	protected CoreWebSocket coreWebSocket;
 	protected AtomicBoolean isRunning;
 	
-	private ServiceModuleManager moduleManager;
+	private ModuleManagerApi moduleManager;
 	
 	private static final Logger logger = LoggerFactory.getLogger(HTTPServer.class);
 	
 	public HTTPServer(Core core, short port) {
 		this.core = core;
 		this.port = port;
+		
+		isRunning = new AtomicBoolean();
 	}
 	
 	public void setSecure(String keystoreFilePath, String keystorePassword, String truststoreFilePath, String truststorePassword) {
-		//TODO
+		//TODO: Handle HTTPS
 	}
 
 	public void start() throws MissingServiceException, IOException {
@@ -57,7 +59,7 @@ public class HTTPServer {
 			publicPath = Paths.get(publicPath).toRealPath().toString();
 		
 		staticFiles.externalLocation(publicPath);
-		coreWebSocket = new CoreWebSocket(this);
+		coreWebSocket = new CoreWebSocket(core.getClientManager());
 		webSocket("/ws", coreWebSocket);
 		
 		//Help the user along
@@ -85,19 +87,15 @@ public class HTTPServer {
 	public boolean isRunning() {
 		return isRunning.get();
 	}
-	
-	public void handleMessages() {
-		coreWebSocket.handleMessages();
-	}
 
 	private void setupModules() throws MissingServiceException  {
-		LocalServiceApi moduleManagerApi = core.getLocalServiceApi(ServiceModuleManager.class);
+		LocalServiceApi moduleManagerApi = core.getLocalServiceApi(ModuleManagerApi.class);
 		if(moduleManagerApi == null)
 			throw new MissingServiceException("No valid Module Manager Service API was found.");
 		List<LocalServiceProvider> moduleManagers = core.getLocalServiceProviders(moduleManagerApi);
 		if(moduleManagers.isEmpty())
 			throw new MissingServiceException("No valid Module Manager Service was found.");
-		moduleManager = (ServiceModuleManager)moduleManagers.get(0).getServiceProvider();
+		moduleManager = (ModuleManagerApi)moduleManagers.get(0).getServiceProvider();
 		if(moduleManager == null)
 			throw new MissingServiceException("Module Manager Service Provider is null!");
 		

@@ -10,8 +10,9 @@ import java.nio.file.StandardOpenOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.stjerncraft.controlpanel.agent.InvalidUUIDException;
 import com.stjerncraft.controlpanel.agent.local.LocalAgent;
+import com.stjerncraft.controlpanel.common.Statics;
+import com.stjerncraft.controlpanel.common.exceptions.InvalidUUIDException;
 import com.stjerncraft.controlpanel.core.module.ModuleManager;
 import com.stjerncraft.controlpanel.core.module.ModuleManagerConfig;
 import com.stjerncraft.controlpanel.core.module.ModuleManagerConfigLoadException;
@@ -31,7 +32,7 @@ public class Main {
 		
 		//Setup local Service Providers
 		logger.info("Setting up local Agents and Services");
-		LocalAgent localAgent = new LocalAgent("core");
+		LocalAgent localAgent = new LocalAgent("CORE", Statics.CORE_AGENT_UUID);
 		try {
 			core.addAgent(localAgent);
 		} catch (InvalidUUIDException e1) {
@@ -39,10 +40,15 @@ public class Main {
 			return;
 		}
 		
-		ModuleManager moduleManager = setupModuleManager();
-		if(moduleManager == null)
+		//Core Service
+		CoreService coreService = new CoreService(core);
+		localAgent.addServiceProvider(coreService, Statics.CORE_PROVIDER_UUID);
+		
+		//Module Manager service
+		ModuleManager moduleManagerService = setupModuleManager();
+		if(moduleManagerService == null)
 			return;
-		localAgent.addServiceProvider(moduleManager);
+		localAgent.addServiceProvider(moduleManagerService, null);
 
 		//Setup Remote Agents
 		logger.info("Setting up Remote Agents");
@@ -70,9 +76,9 @@ public class Main {
 		
 		//Handle messages on the main thread
 		while(server.isRunning()) {
-			//TODO: Wait on thread?
+			//TODO: Wait on thread instead of while loop!
 			//Handle Client messages
-			server.handleMessages();
+			core.getClientManager().handleMessages();
 			
 			//Handle Remote Agent messages
 			//TODO

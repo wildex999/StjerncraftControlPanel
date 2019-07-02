@@ -2,7 +2,9 @@ package com.stjerncraft.controlpanel.api.processor;
 
 import java.util.Map;
 
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
@@ -46,7 +48,10 @@ class FieldCheck {
 			//Might be a DataObject
 			DataObjectInfo dataObject = dataObjects.get(type.toString());
 			if(dataObject != null)
-				fieldType = new FieldType(dataObject.name, dataObject.name);
+				fieldType = new FieldType(dataObject.name);
+			else if(type.getKind() == TypeKind.DECLARED && ((DeclaredType)type).asElement().getKind() == ElementKind.ENUM)
+				fieldType = new FieldType(type.toString(), true);
+				
 		} else
 			fieldType = baseType.type;
 		
@@ -74,6 +79,8 @@ class FieldCheck {
 		if(BaseType.getType(typeStr) != null) //String, Integer, Float...
 			return true;
 		if(dataObjects.containsKey(typeStr)) //This or another DataObject
+			return true;
+		if(type.getKind() == TypeKind.DECLARED && ((DeclaredType)type).asElement().getKind() == ElementKind.ENUM)
 			return true;
 		
 		return false;

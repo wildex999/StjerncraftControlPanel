@@ -8,11 +8,18 @@ import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
 
+/**
+ * A very simple and incomplete implementation of the org.json.JSONArray for use with GWT.
+ */
 public class JSONArray {
 	com.google.gwt.json.client.JSONArray arr;
 	
 	public JSONArray() {
 		arr = new com.google.gwt.json.client.JSONArray();
+	}
+	
+	public JSONArray(com.google.gwt.json.client.JSONArray arr) {
+		this.arr = arr;
 	}
 	
 	public JSONArray(String json) throws JSONException {
@@ -24,6 +31,15 @@ public class JSONArray {
 	
 	public int length() {
 		return arr.size();
+	}
+	
+	public JSONArray getJSONArray(int index) throws JSONException {
+		JSONValue value = arr.get(index);
+		com.google.gwt.json.client.JSONArray newArr = value.isArray();
+		if(newArr == null)
+			throw new JSONException("JSONArray[" + index + "] is not a JSONArray.");
+		
+		return new JSONArray(newArr);
 	}
 	
 	public String getString(int index) throws JSONException {
@@ -116,6 +132,13 @@ public class JSONArray {
 			return b.booleanValue();
 		
 		throw new JSONException("JSONArray[" + index + "] is not a boolean.");
+	}
+	
+	public void put(JSONArray value) {
+		if(value == null)
+			arr.set(arr.size(), JSONNull.getInstance());
+		else
+			arr.set(arr.size(), value.arr);
 	}
 	
 	public void put(int value) {

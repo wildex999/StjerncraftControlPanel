@@ -1,7 +1,6 @@
 package com.stjerncraft.controlpanel.agent.local;
 
 import java.util.List;
-import java.util.UUID;
 
 import com.stjerncraft.controlpanel.agent.ServiceProvider;
 import com.stjerncraft.controlpanel.api.IServiceProvider;
@@ -9,8 +8,8 @@ import com.stjerncraft.controlpanel.api.IServiceProvider;
 public class LocalServiceProvider extends ServiceProvider<LocalServiceApi> {
 	protected final IServiceProvider serviceProvider;
 	
-	public LocalServiceProvider(LocalAgent agent, IServiceProvider serviceProvider, List<LocalServiceApi> apiList) {
-		super(agent, apiList, UUID.randomUUID().toString());
+	public LocalServiceProvider(LocalAgent agent, IServiceProvider serviceProvider, List<LocalServiceApi> apiList, String uuid) {
+		super(agent, apiList, uuid);
 		this.serviceProvider = serviceProvider;
 	}
 	

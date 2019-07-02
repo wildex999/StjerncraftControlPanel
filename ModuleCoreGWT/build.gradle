@@ -20,9 +20,26 @@ dependencies {
 	compile project(':Api')
 }
 
+clean.doFirst {
+	delete "gwt-unitCache/"
+}
+
 compileGwt {
 	war = new File(project(':ModuleCoreGWT').projectDir, "war")
 }
+
+sourceSets {
+	main {
+		java {}
+	}
+	api {
+		java {
+			srcDir "src/api/java"
+			include "com/stjerncraft/controlpanel/module/"
+		}
+	}
+}
+sourceSets.main.compileClasspath += sourceSets.api.output
 
 gwt {
     gwtVersion='2.8.2'

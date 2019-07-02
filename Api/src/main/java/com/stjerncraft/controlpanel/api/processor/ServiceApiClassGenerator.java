@@ -123,6 +123,7 @@ class ServiceApiClassGenerator {
 		method.beginControlFlow("switch(methodName)");
 		for(Method apiMethod : api.methods) {
 			method.addCode("case $S:\n", apiMethod.name)
+			.beginControlFlow("") //Indent the case
 			.beginControlFlow("if(args.length() != $L)", apiMethod.parameters.size())
 			.addStatement("throw new $T(this, methodName, $S + args.length() + $S, method)", CallMethodException.class, "Incorrect number of arguments: ", ", expected " + apiMethod.parameters.size())
 			.endControlFlow();
@@ -142,11 +143,11 @@ class ServiceApiClassGenerator {
 			String retVal = "ret_" + apiMethod.name; //Need unique name since we are inside a switch
 			String retValJson = retVal + "_json";
 			if(apiMethod.isReturnArray) {
-				method.addStatement("$L[] $L = serviceProvider.$L($L)", apiMethod.returnType.getCanonicalName(), retVal, apiMethod.name, argsString);
+				method.addStatement("$L[] $L = serviceProvider.$L($L)", apiMethod.returnType.getCanonicalName(), retVal, apiMethod.methodName, argsString);
 			} else if(apiMethod.returnType != BaseType.Void.type) {
-				method.addStatement("$L $L = serviceProvider.$L($L)", apiMethod.returnType.getCanonicalName(), retVal, apiMethod.name, argsString);
+				method.addStatement("$L $L = serviceProvider.$L($L)", apiMethod.returnType.getCanonicalName(), retVal, apiMethod.methodName, argsString);
 			} else {
-				method.addStatement("serviceProvider.$L($L)", apiMethod.name, argsString);
+				method.addStatement("serviceProvider.$L($L)", apiMethod.methodName, argsString);
 				method.addStatement("return null");
 			}
 			
@@ -156,6 +157,7 @@ class ServiceApiClassGenerator {
 				Serialize.serializeVariable(apiMethod.returnType, retVal, apiMethod.isReturnArray, method, dataObjects, retValJson);
 				method.addStatement("return $L.toString()", retValJson);
 			}
+			method.endControlFlow();
 			
 		}
 		method.endControlFlow();

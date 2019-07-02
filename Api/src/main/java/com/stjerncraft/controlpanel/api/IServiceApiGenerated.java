@@ -10,4 +10,5 @@ public interface IServiceApiGenerated {
 	public String getApiName();
 	
 	public String callMethod(IServiceProvider serviceProvider, String methodJson);
+	public boolean callEventHandler(IServiceProvider serviceProvider, String eventMethodJson);
 }

@@ -29,7 +29,9 @@ public class Serialize {
 		//Ex: "CustomDataClass.serialize($L)"
 		Function<Void, String> getSerializeStr = (Void v) -> {
 			String serializeStr;
-			if(dataObjects.getParsedDataObjects().containsKey(argClass))
+			if(type.isEnum)
+				serializeStr = "$L.toString()";
+			else if(dataObjects.getParsedDataObjects().containsKey(argClass))
 				serializeStr = argClass + ApiStrings.DATAOBJECTSUFFIX + ".serializeObject($L)";
 			else {
 				//We need to cast classes(Float, Integer etc.) down to base type(float, int etc.) so it's not stored as an Object
@@ -53,7 +55,7 @@ public class Serialize {
 		
 		if(isArray) {
 			//For an array we have to serialize each value in the array(TODO: Array of arrays? We would need to be recursive)
-			String arrayName = varName.replaceAll(".", "_") + "__TempArray"; //Can't have duplicates of name if inside switch
+			String arrayName = varName.replaceAll("\\.", "_") + "__TempArray"; //Can't have duplicates of name if inside switch
 			target.addStatement("$T $L = new $T()", JSONArray.class, arrayName, JSONArray.class)
 			.beginControlFlow("for(int index = 0; index < $L.length; index++)", varName)
 			.addStatement("$L.put(" + getSerializeStr.apply(null) + ")", arrayName, varName + "[index]")

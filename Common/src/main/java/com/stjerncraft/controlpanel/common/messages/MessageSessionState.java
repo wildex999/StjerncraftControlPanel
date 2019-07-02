@@ -1,24 +1,21 @@
 package com.stjerncraft.controlpanel.common.messages;
 
 /**
- * Sent to the Client as a reply to a StartSession message.
- * This will contain whether the session was accepted, and the session ID.
+ * Sent to the Client through the Core from the Agent.
+ * This will contain whether the session has started.
  */
-public class MessageSessionState extends Message {
-
-	//The ID the client sent with the StartSession message
-	public int requestId;
-	
+public class MessageSessionState extends Message {	
 	//Unique session ID, assigned by the Core
 	public int sessionId;
-	public boolean accepted;
+	
+	//Set to true once the Agent has started the session.
+	public boolean started;
 	
 	public MessageSessionState() {}
 	
-	public MessageSessionState(int requestId, int sessionId, boolean accepted) {
-		this.requestId = requestId;
+	public MessageSessionState(int sessionId, boolean started) {
 		this.sessionId = sessionId;
-		this.accepted = accepted;
+		this.started = started;
 	}
 	
 }

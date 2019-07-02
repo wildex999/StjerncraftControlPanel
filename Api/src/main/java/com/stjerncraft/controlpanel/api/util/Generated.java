@@ -4,7 +4,6 @@ import java.util.HashMap;
 
 import com.stjerncraft.controlpanel.api.IDataObjectGenerated;
 import com.stjerncraft.controlpanel.api.IServiceApiGenerated;
-import com.stjerncraft.controlpanel.api.IServiceProvider;
 import com.stjerncraft.controlpanel.api.processor.ApiStrings;
 
 /**
@@ -13,10 +12,10 @@ import com.stjerncraft.controlpanel.api.processor.ApiStrings;
  */
 @SuppressWarnings("rawtypes")
 public class Generated {
-	static HashMap<Class<? extends IServiceProvider>, IServiceApiGenerated> apiMap = new HashMap<>();
+	static HashMap<Class<?>, IServiceApiGenerated> apiMap = new HashMap<>();
 	static HashMap<Class<?>, IDataObjectGenerated> dataObjectMap = new HashMap<>();
 	
-	public static IServiceApiGenerated getGeneratedApi(Class<? extends IServiceProvider> apiInterfaceClass) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+	public static IServiceApiGenerated getGeneratedApi(Class<?> apiInterfaceClass) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
 		IServiceApiGenerated apiInstance = apiMap.get(apiInterfaceClass);
 		if(apiInstance != null)
 			return apiInstance;

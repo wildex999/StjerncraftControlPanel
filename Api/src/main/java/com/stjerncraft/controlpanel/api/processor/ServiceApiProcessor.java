@@ -16,6 +16,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.tools.Diagnostic.Kind;
 
 import com.stjerncraft.controlpanel.api.IServiceProvider;
 import com.stjerncraft.controlpanel.api.annotation.ServiceApi;
@@ -34,6 +35,10 @@ class ServiceApiProcessor {
 		this.dataObjectProc = dataObjectProc;
 	}
 	
+	/**
+	 * Find and parse all Service APIs, adding them to the apis map.
+	 * @param env
+	 */
 	public void parseServiceApis(RoundEnvironment env) {
 		for(TypeElement el : getServiceApis(env)) {
 			checkValidServiceApi(el);
@@ -69,11 +74,6 @@ class ServiceApiProcessor {
 		if(element.getKind() != ElementKind.INTERFACE)
 			throw new IllegalArgumentException("[" + element.getSimpleName() + "] The Service API must be an interface!");
 		
-		//Must implement ServiceProvider
-		TypeMirror serviceProviderInterface = procEnv.getElementUtils().getTypeElement(IServiceProvider.class.getCanonicalName()).asType();
-		if(!procEnv.getTypeUtils().isAssignable(element.asType(), serviceProviderInterface))
-			throw new IllegalArgumentException("[" + element.getSimpleName() + "] Must implement " + IServiceProvider.class.getCanonicalName());
-		
 		//Can't be generic
 		if(!element.getTypeParameters().isEmpty())
 			throw new IllegalArgumentException("[" + element.getQualifiedName() + "] Service API interface can not be generic!");
@@ -89,7 +89,10 @@ class ServiceApiProcessor {
 			return;
 		
 		ExecutableElement method = (ExecutableElement)element;
-		Method newMethod = new Method(method.getSimpleName().toString());
+		
+		//TODO: Compress the name somehow? Sort the methods by their signature name so we can append a number instead?)
+		Method newMethod = new Method(getMethodSignature(method), method.getSimpleName().toString());
+		procEnv.getMessager().printMessage(Kind.WARNING, "TEST: " + newMethod);
 		
 		//Return type
 		TypeMirror returnType = method.getReturnType();
@@ -113,7 +116,77 @@ class ServiceApiProcessor {
 
 		api.addMethod(newMethod);
 	}
-
+	
+	/**
+	 * Get the full signature name of the method(Excluding return type).
+	 * @return
+	 */
+	protected static String getMethodSignature(ExecutableElement method) {
+		String simpleName = method.getSimpleName().toString();
+		StringBuilder sb = new StringBuilder(simpleName);
+		
+		
+		List<? extends VariableElement> parameters = method.getParameters();
+		if(parameters.size() > 0)
+			sb.append("$");
+		
+		//getParameters always returns in declaration order, so this is safe
+		for(VariableElement par : parameters) {
+			String parName = par.asType().toString();
+			switch(parName) {
+			case "java.lang.String":
+				parName = "Str";
+				break;
+			case "java.lang.Byte":
+				parName = "Byt";
+				break;
+			case "java.lang.Integer":
+				parName = "Int";
+				break;
+			case "java.lang.Float":
+				parName = "Flo";
+				break;
+			case "java.lang.Double":
+				parName = "Dou";
+				break;
+			case "java.lang.Boolean":
+				parName = "Boo";
+				break;
+			case "byte":
+				parName = "B";
+				break;
+			case "char":
+				parName = "C";
+				break;
+			case "double":
+				parName = "D";
+				break;
+			case "float":
+				parName = "F";
+				break;
+			case "int":
+				parName = "I";
+				break;
+			case "long":
+				parName = "J";
+				break;
+			case "short":
+				parName = "S";
+				break;
+			case "void":
+				parName = "V";
+				break;
+			case "boolean":
+				parName = "Z";
+				break;
+			}
+			
+			sb.append(parName.replaceAll("\\.", "_").replaceAll("\\[\\]", "A"));
+			sb.append("$");
+		}
+		
+		return sb.toString();
+	}
 	
 	protected static Set<TypeElement> getServiceApis(RoundEnvironment env) {
 		Set<TypeElement> elements = new HashSet<>();

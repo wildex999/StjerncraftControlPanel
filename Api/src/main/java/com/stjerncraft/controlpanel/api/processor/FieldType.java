@@ -5,6 +5,7 @@ import java.util.Objects;
 public class FieldType {
 	public String name;
 	public String[] classPaths;
+	public boolean isEnum;
 	
 	/**
 	 * 
@@ -17,11 +18,24 @@ public class FieldType {
 		
 	}
 	
+	FieldType(String name) {
+		this.name = name;
+		this.classPaths = new String[] {name};
+	}
+	
+	public FieldType(String name, boolean isEnum) {
+		this(name);
+		this.isEnum = isEnum;
+	}
+	
 	public String getCanonicalName() {
 		return this.classPaths[0];
 	}
 	
 	public String getPrimitiveName() {
+		if(this.classPaths.length < 2)
+			return "";
+		
 		return this.classPaths[1];
 	}
 	

@@ -2,16 +2,29 @@ package com.stjerncraft.controlpanel.agent;
 
 import java.util.List;
 
+import com.stjerncraft.controlpanel.common.ServiceApi;
+import com.stjerncraft.controlpanel.common.data.AgentInfo;
+import com.stjerncraft.controlpanel.common.data.ServiceProviderInfo;
+
 /**
  * The agent is the representation of a group of Service Providers.
  * An agent might be a Minecraft Server, or any other remote(or local) host of Service Providers.
  */
 
 public interface IAgent<T extends ServiceProvider<V>, V extends ServiceApi> {
-	//The name of a given Agent should remain the same when possible, allowing the user to specify which agent to use by name.
-	//The Agent's name must be unique, and should be representative of the server it is on.
+	/**
+	 * Get the Uuid of the agent.
+	 * The Agent should preferably have the same UUID always, allowing the Agent/Server to be remembered between restarts.
+	 * @return
+	 */
+	public String getUuid();
+	
+	/**
+	 * The name of the Agent.
+	 * This is usually what is shown to the user when choosing Server/Core.
+	 * @return
+	 */
 	public String getName();
-	public String getId();
 	
 	public List<V> getServiceApiList();
 	public List<V> getServiceApiList(String apiName);
@@ -25,6 +38,11 @@ public interface IAgent<T extends ServiceProvider<V>, V extends ServiceApi> {
 	 */
 	public List<ISession> getSessions();
 	
+	/**
+	 * Check whether this Agent has a Service Provider for the given API
+	 * @param api
+	 * @return
+	 */
 	public boolean providesApi(ServiceApi api);
 	
 	/**
@@ -41,4 +59,15 @@ public interface IAgent<T extends ServiceProvider<V>, V extends ServiceApi> {
 	 * @return A session object to use for further communication, or null if it failed to create a session.
 	 */
 	public ISession startSession(ServiceApi api, ServiceProvider<? extends ServiceApi> service, IRemoteClient client, int sessionId);
+	
+	public default AgentInfo getInfo() {
+		//TODO: Cache this?
+		List<T> providers = getServiceProviders();
+		ServiceProviderInfo[] providersInfo = new ServiceProviderInfo[providers.size()];
+		for(int i = 0; i < providers.size(); i++)
+			providersInfo[i] = providers.get(i).getInfo();
+		
+		AgentInfo info = new AgentInfo(getUuid(), getName(), providersInfo);
+		return info;
+	}
 }

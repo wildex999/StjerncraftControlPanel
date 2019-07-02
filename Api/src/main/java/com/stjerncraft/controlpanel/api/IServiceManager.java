@@ -3,9 +3,11 @@ package com.stjerncraft.controlpanel.api;
 import java.util.List;
 
 /**
- * Responsible for managing the Service API implementations, forwarding the method calls, events etc.
+ * The Service Manager is the primary way for Service Providers to communicate with the Agent.
+ * It will provide context to the Service Provider, like which client is doing the method call, 
+ * event subscriptions, and allow finding other Service Providers.
  * 
- * The Service Manager will also provide context to the Service Provider, like which client is doing the method call.
+ * This is used because most Service Providers should not have to access the Agent directly.
  */
 
 public interface IServiceManager {

@@ -9,13 +9,19 @@ import java.util.List;
 
 class Method {
 	protected String name;
+	protected String methodName; //The actual name of the method which is called. Might differ from name when multiple methods of the same name exists
 	protected List<Field> parameters = new ArrayList<Field>(); //Use list to retain order
 	
 	protected FieldType returnType;
 	protected boolean isReturnArray;
 
 	public Method(String name) {
+		this(name, name);
+	}
+	
+	public Method(String name, String methodName) {
 		this.name = name;
+		this.methodName = methodName;
 	}
 	
 	public void addParameter(Field par) {

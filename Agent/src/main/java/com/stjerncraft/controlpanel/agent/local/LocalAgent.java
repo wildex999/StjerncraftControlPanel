@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 
 import com.google.common.base.Objects;
 import com.google.common.reflect.TypeToken;
@@ -15,11 +14,13 @@ import com.stjerncraft.controlpanel.agent.IAgent;
 import com.stjerncraft.controlpanel.agent.IAgentListener;
 import com.stjerncraft.controlpanel.agent.IRemoteClient;
 import com.stjerncraft.controlpanel.agent.ISession;
-import com.stjerncraft.controlpanel.agent.ServiceApi;
+import com.stjerncraft.controlpanel.agent.ISessionListener;
 import com.stjerncraft.controlpanel.agent.ServiceProvider;
 import com.stjerncraft.controlpanel.api.IServiceApiGenerated;
 import com.stjerncraft.controlpanel.api.IServiceProvider;
 import com.stjerncraft.controlpanel.api.processor.ApiStrings;
+import com.stjerncraft.controlpanel.common.ServiceApi;
+import com.stjerncraft.controlpanel.common.util.ListenerHandler;
 
 /**
  * Agent for local Service Providers.
@@ -29,17 +30,26 @@ public class LocalAgent implements IAgent<LocalServiceProvider, LocalServiceApi>
 	protected String name;
 	protected String uuid;
 	
-	Map<Class<? extends IServiceProvider>, LocalServiceApi> apiRegister;
+	Map<Class<?>, LocalServiceApi> apiRegister;
 	Map<IServiceProvider, LocalServiceProvider> serviceProviders;
 	Map<String, LocalServiceApi> apiNameRegister;
 	Map<LocalServiceApi, Set<LocalServiceProvider>> apiServiceProviders;
 	
 	Set<LocalSession> sessions;
-	Set<IAgentListener> listeners;
+	ListenerHandler<IAgentListener> listeners;
+	LocalServiceManager serviceManager;
 	
-	public LocalAgent(String name) {
+	/**
+	 * 
+	 * @param name
+	 * @param uuid If null a random one will be generated
+	 */
+	public LocalAgent(String name, String uuid) {
 		this.name = name;
-		uuid = UUID.randomUUID().toString();
+		if(uuid != null)
+			this.uuid = uuid;
+		else
+			this.uuid = UUID.randomUUID().toString();
 		
 		apiRegister = new HashMap<>();
 		apiNameRegister = new HashMap<>();
@@ -47,22 +57,25 @@ public class LocalAgent implements IAgent<LocalServiceProvider, LocalServiceApi>
 		apiServiceProviders = new HashMap<>();
 		
 		sessions = new HashSet<>();
-		listeners = new HashSet<>();
+		listeners = new ListenerHandler<>();
+		
+		serviceManager = new LocalServiceManager(this);
 	}
 	
 	/**
 	 * Add the given Service Provider to the Agent.
 	 * @param serviceProvider Service Provider implementing one or more Service API's.
+	 * @param uuid The UUID to assign to this Service Provider. Null to generate it.
 	 * @throws IllegalArgumentException If the given serviceProvider implements no Service API, or it fails to register(Conflict etc.).
 	 */
-	public void addServiceProvider(IServiceProvider serviceProvider) throws IllegalArgumentException {
+	public void addServiceProvider(IServiceProvider serviceProvider, String uuid) throws IllegalArgumentException {
 		List<LocalServiceApi> apiList = parseServiceApis(serviceProvider.getClass());
 		if(apiList.isEmpty())
 			throw new IllegalArgumentException("The Service Provider " + serviceProvider + " implements no valid Service API!");
 		
-		LocalServiceProvider newServiceProvider = new LocalServiceProvider(this, serviceProvider, apiList);
+		LocalServiceProvider newServiceProvider = new LocalServiceProvider(this, serviceProvider, apiList, uuid);
 		serviceProviders.put(serviceProvider, newServiceProvider);
-		String err = runOnListeners(l -> {
+		String err = listeners.runTry(l -> {
 			try {
 				l.onProviderAdded(newServiceProvider);
 			} catch (Exception e) {
@@ -85,7 +98,7 @@ public class LocalAgent implements IAgent<LocalServiceProvider, LocalServiceApi>
 				apiServiceProviders.put(api, providers);
 			}
 			providers.add(newServiceProvider);
-			err = runOnListeners(l -> {
+			err = listeners.runTry(l -> {
 				try {
 					l.onApiAdded(api);
 				} catch (Exception e) {
@@ -114,7 +127,7 @@ public class LocalAgent implements IAgent<LocalServiceProvider, LocalServiceApi>
 		if(serviceProviders.remove(serviceProvider.getServiceProvider()) == null)
 				return;
 		
-		runOnListeners(l -> { l.onProviderRemoved(serviceProvider); return null; });
+		listeners.run(l -> l.onProviderRemoved(serviceProvider));
 		
 		//Remove from API map
 		for(LocalServiceApi api : serviceProvider.getApiList()) {
@@ -123,7 +136,7 @@ public class LocalAgent implements IAgent<LocalServiceProvider, LocalServiceApi>
 				continue;
 			
 			if(providers.remove(serviceProvider))
-				runOnListeners(l -> { l.onApiRemoved(api); return null; });
+				listeners.run(l -> l.onApiRemoved(api));
 			if(providers.isEmpty())
 				apiServiceProviders.remove(api);
 		}
@@ -146,7 +159,7 @@ public class LocalAgent implements IAgent<LocalServiceProvider, LocalServiceApi>
 	}
 	
 	@Override
-	public String getId() {
+	public String getUuid() {
 		return uuid;
 	}
 	
@@ -209,13 +222,21 @@ public class LocalAgent implements IAgent<LocalServiceProvider, LocalServiceApi>
 			return null;
 		
 		LocalSession newSession = new LocalSession(this, client, localService, localApi, sessionId);
+		newSession.addListener(new ISessionListener() {
+			@Override
+			public void onSessionEnded(String reason) {
+				endSession(newSession, reason);
+			}
+		});
+		
 		sessions.add(newSession);
+		newSession.startSession();
 		
 		return newSession;
 	}
 	
 	/**
-	 * End the given session.
+	 * End the given session if it exists.
 	 * @param session Session to end.
 	 * @param reason Reason for ending the session. Can be null.
 	 */
@@ -223,7 +244,7 @@ public class LocalAgent implements IAgent<LocalServiceProvider, LocalServiceApi>
 		if(!sessions.remove(session))
 			return;
 		
-		session.getClient().onSessionEnd(session, reason);
+		session.endSession(reason);
 	}
 	
 	/**
@@ -231,56 +252,39 @@ public class LocalAgent implements IAgent<LocalServiceProvider, LocalServiceApi>
 	 * @param serviceClass The class of a Service Provider implementation.
 	 * @return A Set containing all the Service API's implemented by the Service Provider.
 	 */
-	@SuppressWarnings({"unchecked"})
 	protected List<LocalServiceApi> parseServiceApis(Class<? extends IServiceProvider> serviceClass) {
-		TypeToken<? extends IServiceProvider>.TypeSet interfaceSet = TypeToken.of(serviceClass).getTypes().interfaces();
+		//Get all direct and inherited interfaces for this class(Including interfaces extended by interfaces)
+		TypeToken<?>.TypeSet interfaceSet = TypeToken.of(serviceClass).getTypes().interfaces();
 		
 		Set<LocalServiceApi> apiSet = new HashSet<>();
-		for(Class<?> typeClass : interfaceSet.rawTypes()) {
-			Class<? extends IServiceProvider> apiInterface = (Class<? extends IServiceProvider>)typeClass;
-			
-			//Check if any of its DIRECT implemented interfaces are IServiceProvider
-			for(Class<?> impl : apiInterface.getInterfaces() ) {
-				if(impl != IServiceProvider.class)
-					continue;
+		for(Class<?> apiInterface : interfaceSet.rawTypes()) {
+			//Only care for interfaces DIRECTLY annotated as a ServiceApi
+			if(apiInterface.getDeclaredAnnotation(com.stjerncraft.controlpanel.api.annotation.ServiceApi.class) == null)
+				continue;
 
-				//Check for Generated API
-				LocalServiceApi newApi = apiRegister.get(apiInterface);
-				if(newApi != null) {
-					apiSet.add(newApi);
-					continue;
-				}
+			//Check for Generated API
+			LocalServiceApi newApi = apiRegister.get(apiInterface);
+			if(newApi != null) {
+				apiSet.add(newApi);
+				continue;
+			}
+			
+			try {
+				//Find the generated class, instantiate it and add it to the Agents API register
+				Class<?> clazz = Class.forName(apiInterface.getCanonicalName() + ApiStrings.APISUFFIX);
+				IServiceApiGenerated generatedClass = (IServiceApiGenerated)clazz.newInstance();
 				
-				try {
-					Class<?> clazz = Class.forName(apiInterface.getCanonicalName() + ApiStrings.APISUFFIX);
-					IServiceApiGenerated generatedClass = (IServiceApiGenerated)clazz.newInstance();
-					
-					newApi = new LocalServiceApi(apiInterface, generatedClass);
-					apiRegister.put(apiInterface, newApi);
-					apiNameRegister.put(generatedClass.getApiName(), newApi);
-					apiSet.add(newApi);
-				} catch (ClassNotFoundException | ClassCastException | InstantiationException | IllegalAccessException e) {
-					continue;	
-				}
+				newApi = new LocalServiceApi(apiInterface, generatedClass);
+				apiRegister.put(apiInterface, newApi);
+				apiNameRegister.put(generatedClass.getApiName(), newApi);
+				apiSet.add(newApi);
+			} catch (ClassNotFoundException | ClassCastException | InstantiationException | IllegalAccessException e) {
+				System.err.println("Error while parsing Service API " + apiInterface + ": " + e);
+				continue;	
 			}
 		}
 		
 		return new ArrayList<>(apiSet);
-	}
-	
-	/**
-	 * 
-	 * @param toRun
-	 * @return String containing error message. Send null if there was no error
-	 */
-	protected String runOnListeners(Function<IAgentListener, String> toRun) {
-		for(IAgentListener listener : listeners) {
-			String err = toRun.apply(listener);
-			if(err != null)
-				return err;
-		}
-		
-		return null;
 	}
 
 }
