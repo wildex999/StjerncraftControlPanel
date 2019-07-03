@@ -71,7 +71,16 @@ class ServiceApiClassGenerator {
 			.addParameter(String.class, "method")
 			.addStatement("return callMethod(($L)serviceProvider, method)", api.name.replaceAll("\\$", "."))
 			.build();
-		MethodSpec callDirectMethod = generateCallMethod(api);
+		MethodSpec callDirectMethod = generateCallMethod(api, "callMethod", false);
+		MethodSpec callEventHandler = MethodSpec.methodBuilder("callEventHandler")
+			.addModifiers(Modifier.PUBLIC)
+			.returns(boolean.class)
+			.addParameter(IServiceProvider.class, "serviceProvider")
+			.addParameter(String.class, "method")
+			.addStatement("return callEventHandler(($L)serviceProvider, method)", api.name.replaceAll("\\$", "."))
+			.build();
+		//EventHandler is handled like normal Methods for now
+		MethodSpec callDirectEventHandler = generateCallMethod(api, "callEventHandler", true);
 		
 		TypeSpec generatedClass = TypeSpec.classBuilder(className + ApiStrings.APISUFFIX)
 			.addModifiers(Modifier.PUBLIC)
@@ -81,6 +90,8 @@ class ServiceApiClassGenerator {
 			.addMethod(getApiName)
 			.addMethod(callMethod)
 			.addMethod(callDirectMethod)
+			.addMethod(callEventHandler)
+			.addMethod(callDirectEventHandler)
 			.build();
 		
 		JavaFile javaFile = JavaFile.builder(packageName, generatedClass).build();
@@ -102,10 +113,10 @@ class ServiceApiClassGenerator {
 	 * "Str" -> ["Str"]
 	 * Inst -> [{"field1", "field2", [], 1}]
 	 */
-	protected MethodSpec generateCallMethod(ServiceApiInfo api) {
-		MethodSpec.Builder method = MethodSpec.methodBuilder("callMethod")
+	protected MethodSpec generateCallMethod(ServiceApiInfo api, String methodName, boolean eventHandler) {
+		MethodSpec.Builder method = MethodSpec.methodBuilder(methodName)
 			.addModifiers(Modifier.PUBLIC)
-			.returns(String.class)
+			.returns(eventHandler ? boolean.class : String.class)
 			.addParameter(ClassName.bestGuess(api.name.replaceAll("\\$", ".")), "serviceProvider")
 			.addParameter(String.class, "method");
 				
@@ -122,6 +133,11 @@ class ServiceApiClassGenerator {
 		//Method Switch
 		method.beginControlFlow("switch(methodName)");
 		for(Method apiMethod : api.methods) {
+			//Event Handlers are not handled here
+			//TODO: Common generate?
+			if((apiMethod.isEventHandler && !eventHandler) || (!apiMethod.isEventHandler && eventHandler))
+				continue;
+			
 			method.addCode("case $S:\n", apiMethod.name)
 			.beginControlFlow("") //Indent the case
 			.beginControlFlow("if(args.length() != $L)", apiMethod.parameters.size())
@@ -134,7 +150,7 @@ class ServiceApiClassGenerator {
 				varNames = Parse.parseVariables(apiMethod.parameters, "args", method, dataObjects, apiMethod.name);
 			}
 			catch(IllegalArgumentException e) {
-				throw new IllegalArgumentException("Error while generating variable parser in callMethod for " + apiMethod + " while parsing api " + api, e);
+				throw new IllegalArgumentException("Error generating variable parser in callMethod for " + apiMethod + " while parsing api " + api, e);
 			}
 			
 			String argsString = String.join(", ", varNames);
@@ -152,10 +168,15 @@ class ServiceApiClassGenerator {
 			}
 			
 			//Serialize
-			if(apiMethod.isReturnArray || apiMethod.returnType != BaseType.Void.type) {
-				method.addStatement("$T $L = new $T()", JSONArray.class, retValJson, JSONArray.class);
-				Serialize.serializeVariable(apiMethod.returnType, retVal, apiMethod.isReturnArray, method, dataObjects, retValJson);
-				method.addStatement("return $L.toString()", retValJson);
+			if(!eventHandler) {
+				if(apiMethod.isReturnArray || apiMethod.returnType != BaseType.Void.type) {
+					method.addStatement("$T $L = new $T()", JSONArray.class, retValJson, JSONArray.class);
+					Serialize.serializeVariable(apiMethod.returnType, retVal, apiMethod.isReturnArray, method, dataObjects, retValJson);
+					method.addStatement("return $L.toString()", retValJson);
+				}
+			} else {
+				//Event Handlers just pass on the returned boolean
+				method.addStatement("return $L", retVal);
 			}
 			method.endControlFlow();
 			

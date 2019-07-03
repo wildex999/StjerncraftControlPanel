@@ -110,9 +110,9 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 	}
 
 	@Override
-	public void listenForModuleEvents() {
+	public boolean listenForModuleEvents() {
 		// TODO Auto-generated method stub
-		
+		return false;
 	}
 
 }

@@ -18,7 +18,7 @@ public interface IServiceManager {
 	public IClient getClient();
 	
 	/**
-	 * Get the event subscription for the current event subscription.
+	 * Get the event subscription for the current event subscribe/unsubscribe.
 	 * This will only return a non-null value when called inside a method tagged with EventHandler.
 	 */
 	public IEventSubscription getEventSubscription();

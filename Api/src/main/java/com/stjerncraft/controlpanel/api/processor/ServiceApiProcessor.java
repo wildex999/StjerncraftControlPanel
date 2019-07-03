@@ -15,10 +15,13 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.MirroredTypeException;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 
 import com.stjerncraft.controlpanel.api.IServiceProvider;
+import com.stjerncraft.controlpanel.api.annotation.EventHandler;
 import com.stjerncraft.controlpanel.api.annotation.ServiceApi;
 
 class ServiceApiProcessor {
@@ -59,7 +62,9 @@ class ServiceApiProcessor {
 				if(member.getKind() != ElementKind.METHOD)
 					continue;
 				
-				parseMethod(serviceApi, member);
+				Method newMethod = parseMethod(serviceApi, member);
+				if(newMethod != null)
+					serviceApi.addMethod(newMethod);
 			}
 			
 		}
@@ -84,9 +89,9 @@ class ServiceApiProcessor {
 	 * @param api
 	 * @param element
 	 */
-	protected void parseMethod(ServiceApiInfo api, Element element) {
+	protected Method parseMethod(ServiceApiInfo api, Element element) {
 		if(!element.getModifiers().contains(Modifier.PUBLIC) || ignoreMethodsFrom.contains(element.getEnclosingElement().toString()))
-			return;
+			return null;
 		
 		ExecutableElement method = (ExecutableElement)element;
 		
@@ -107,14 +112,39 @@ class ServiceApiProcessor {
 			TypeMirror parType = par.asType();
 			FieldType parFieldType = FieldCheck.getActualFieldType(parType, dataObjectProc.getParsedDataObjects());
 			if(!FieldCheck.isValidType(dataObjectProc.getParsedDataObjects(), parType) || parFieldType == null || parFieldType == BaseType.Void.type) {
-				throw new IllegalAccessError("[" + api.getName() + "] Method parameter " + par.getSimpleName() + " has invalid type " + par.asType() + 
+				throw new IllegalArgumentException("[" + api.getName() + "] Method parameter " + par.getSimpleName() + " has invalid type " + par.asType() + 
 												" for " + element.getSimpleName() + " from " + element.getEnclosingElement());
 			}
 			Field parField = new Field(par.getSimpleName().toString(), FieldCheck.isArray(parType), parFieldType);
 			newMethod.addParameter(parField);
 		}
-
-		api.addMethod(newMethod);
+		
+		//Special handling for Event Handler Methods
+		EventHandler eventHandler = element.getAnnotation(EventHandler.class);
+		if(eventHandler != null)
+		{
+			newMethod.isEventHandler = true;
+			
+			//A known Data type is required to generate the serialize & deserialize
+			//Getting the class directly doesn't work, but the exception gives us the TypeMirror for the class.
+			try { eventHandler.eventData(); } catch(MirroredTypeException e)
+			{
+				FieldType type = FieldCheck.getActualFieldType(e.getTypeMirror(), dataObjectProc.getParsedDataObjects());
+				if(type == null)
+					throw new IllegalArgumentException("[" + api.getName() + "] Unknown Data Type " + e.getTypeMirror() + " for Event Handler " + newMethod.name + " from " + element.getEnclosingElement());
+				
+				newMethod.eventDataType = type;
+			}
+			
+			if(newMethod.eventDataType == null)
+				throw new IllegalArgumentException("[" + api.getName() + "] Missing Data Type for Event Handler " + newMethod.name + " from " + element.getEnclosingElement());
+			
+			//Must return a boolean to indicate success/failure
+			if(returnType.getKind() != TypeKind.BOOLEAN)
+				throw new IllegalArgumentException("[" + api.getName() + "] Return type must be boolean for Event Handler " + newMethod.name + " from " + element.getEnclosingElement());
+		}
+		
+		return newMethod;
 	}
 	
 	/**

@@ -6,7 +6,7 @@ import com.stjerncraft.controlpanel.api.IServiceProvider;
  * Sent to the Core to initialize a session with a Service Provider.
  * The Core will assign a unique session ID, and forward the request to the Agent.
  * 
- * The Agent is expected to reply with a SessionState indicating whether the Session was accepted.
+ * The Agent is expected to reply with a SessionAccepted message indicating whether the Session was accepted.
  */
 public class MessageStartSession extends Message {
 	

@@ -67,6 +67,7 @@ public class HTTPServer {
 		
 		awaitInitialization();
 		
+		//TODO: Remove in production build. Only used for testing
 		get("/stop", (req, res) -> { stop(); return null; });
 		
 		//Authentication

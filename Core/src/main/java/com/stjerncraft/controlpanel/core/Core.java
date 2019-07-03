@@ -54,7 +54,7 @@ public class Core {
 	}
 	
 	/**
-	 * Try starting a session with the Client towards the given API on the given Service PRovider.
+	 * Try starting a session with the Client towards the given API on the given Service Provider.
 	 * @param client
 	 * @param provider
 	 * @param api

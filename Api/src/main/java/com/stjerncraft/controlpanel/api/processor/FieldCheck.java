@@ -39,6 +39,9 @@ class FieldCheck {
 	 * @return Null if it was not able to determine a valid FieldType for the given type.
 	 */
 	public static FieldType getActualFieldType(TypeMirror type, Map<String, DataObjectInfo> dataObjects) {
+		if(type == null)
+			return null;
+		
 		FieldType fieldType = null;
 		if(FieldCheck.isArray(type))
 			type = FieldCheck.getArrayComponentType(type);

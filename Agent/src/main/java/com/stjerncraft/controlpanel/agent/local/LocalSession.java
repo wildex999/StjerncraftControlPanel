@@ -8,6 +8,7 @@ import com.stjerncraft.controlpanel.agent.IRemoteClient;
 import com.stjerncraft.controlpanel.agent.ISession;
 import com.stjerncraft.controlpanel.agent.ISessionListener;
 import com.stjerncraft.controlpanel.agent.ServiceProvider;
+import com.stjerncraft.controlpanel.api.EventAction;
 import com.stjerncraft.controlpanel.api.IEventSubscription;
 import com.stjerncraft.controlpanel.common.ServiceApi;
 import com.stjerncraft.controlpanel.common.util.ListenerHandler;
@@ -47,7 +48,7 @@ public class LocalSession implements ISession {
 	}
 	
 	@Override
-	public IRemoteClient getClient() {
+	public IRemoteClient getRemoteClient() {
 		return client;
 	}
 	
@@ -95,7 +96,8 @@ public class LocalSession implements ISession {
 		
 		//Setup the Context in ServiceManager
 		LocalServiceManager manager = agent.serviceManager;
-		manager.setEventContext(action, subscription);
+		LocalEventSubscription subscription = new LocalEventSubscription(this);
+		manager.setEventContext(EventAction.Subscribe, subscription);
 		
 		boolean ret = api.getGeneratedApi().callEventHandler(serviceProvider.getServiceProvider(), methodJson);
 		
@@ -110,8 +112,14 @@ public class LocalSession implements ISession {
 	
 	@Override
 	public void eventUnsubscribe(IEventSubscription subscription) {
-		// TODO Auto-generated method stub
+		if(!exists || !hasStarted)
+			return;
 		
+		//Setup the Context in ServiceManager
+		LocalServiceManager manager = agent.serviceManager;
+		manager.setEventContext(EventAction.Unsubscribe, subscription);
+		
+		//TODO: Call method
 	}
 
 	@Override
@@ -127,6 +135,8 @@ public class LocalSession implements ISession {
 	public void endSession(String reason) {
 		if(!exists)
 			return;
+		
+		//TODO: End subscriptions
 		
 		exists = false;
 		hasStarted = false;

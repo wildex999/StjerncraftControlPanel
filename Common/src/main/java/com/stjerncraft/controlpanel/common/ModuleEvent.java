@@ -15,5 +15,5 @@ public class ModuleEvent {
 		Updated
 	}
 
-	public Action a;
+	public Action action;
 }

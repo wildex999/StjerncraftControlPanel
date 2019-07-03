@@ -17,7 +17,7 @@ public interface ISession {
 	 */
 	public int getSessionId();
 	
-	public IRemoteClient getClient();
+	public IRemoteClient getRemoteClient();
 	public ServiceApi getServiceApi();
 	public ServiceProvider<? extends ServiceApi> getServiceProvider();
 	

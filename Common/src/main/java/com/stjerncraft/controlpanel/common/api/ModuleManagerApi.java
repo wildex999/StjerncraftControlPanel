@@ -1,6 +1,5 @@
 package com.stjerncraft.controlpanel.common.api;
 
-import com.stjerncraft.controlpanel.api.IServiceProvider;
 import com.stjerncraft.controlpanel.api.annotation.EventHandler;
 import com.stjerncraft.controlpanel.api.annotation.ServiceApi;
 import com.stjerncraft.controlpanel.common.ModuleEvent;
@@ -49,5 +48,5 @@ public interface ModuleManagerApi {
 	 * Note: Event will only be sent to user if the user has the permissions to see the Module.
 	 */
 	@EventHandler(eventData=ModuleEvent.class)
-	public void listenForModuleEvents();
+	public boolean listenForModuleEvents();
 }

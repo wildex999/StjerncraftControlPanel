@@ -14,6 +14,11 @@ class Method {
 	
 	protected FieldType returnType;
 	protected boolean isReturnArray;
+	
+	//EventHandler
+	protected boolean isEventHandler;
+	protected FieldType eventDataType;
+	
 
 	public Method(String name) {
 		this(name, name);
@@ -22,6 +27,7 @@ class Method {
 	public Method(String name, String methodName) {
 		this.name = name;
 		this.methodName = methodName;
+		this.isEventHandler = false;
 	}
 	
 	public void addParameter(Field par) {
@@ -49,6 +55,10 @@ class Method {
 		if(returnType != other.returnType)
 			return false;
 		if(isReturnArray != other.isReturnArray)
+			return false;
+		if(isEventHandler != other.isEventHandler)
+			return false;
+		if(eventDataType != other.eventDataType)
 			return false;
 		
 		return true;

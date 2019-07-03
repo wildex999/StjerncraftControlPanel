@@ -9,7 +9,7 @@ import com.stjerncraft.controlpanel.api.IServiceManager;
 import com.stjerncraft.controlpanel.api.IServiceProvider;
 
 /**
- * Service Manager for local Service Providers
+ * Service Manager for local Service Providers.
  */
 
 public class LocalServiceManager implements IServiceManager {

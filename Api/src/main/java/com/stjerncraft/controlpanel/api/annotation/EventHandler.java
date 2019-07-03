@@ -1,5 +1,10 @@
 package com.stjerncraft.controlpanel.api.annotation;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
  * Methods tagged with this are considered Event Handlers.
  * Event Handlers are called by the client to either register or unregister for an event.
@@ -17,6 +22,8 @@ package com.stjerncraft.controlpanel.api.annotation;
  * 
  */
 
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.CLASS)
 public @interface EventHandler {
 	/**
 	 * The DataObject which is sent to the client for each event.

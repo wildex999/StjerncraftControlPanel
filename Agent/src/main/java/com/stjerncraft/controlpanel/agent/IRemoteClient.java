@@ -1,6 +1,8 @@
 package com.stjerncraft.controlpanel.agent;
 
-public interface IRemoteClient {
+import com.stjerncraft.controlpanel.api.IClient;
+
+public interface IRemoteClient extends IClient {	
 	String getUuid();
 	
 	/**

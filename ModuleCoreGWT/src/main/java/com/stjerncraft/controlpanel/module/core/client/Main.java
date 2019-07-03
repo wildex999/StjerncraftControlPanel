@@ -2,12 +2,9 @@ package com.stjerncraft.controlpanel.module.core.client;
 
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.shared.GWT;
-import com.stjerncraft.controlpanel.common.Statics;
 import com.stjerncraft.controlpanel.common.Version;
-import com.stjerncraft.controlpanel.common.api.CoreApi;
 import com.stjerncraft.controlpanel.common.messages.MessageSessionAccepted;
 import com.stjerncraft.controlpanel.common.messages.MessageSessionState;
-import com.stjerncraft.controlpanel.common.messages.MessageStartSession;
 import com.stjerncraft.controlpanel.common.messages.MessageVersion;
 import com.stjerncraft.controlpanel.module.core.messages.Messages;
 import com.stjerncraft.controlpanel.module.core.websocket.IWebsocketListener;
