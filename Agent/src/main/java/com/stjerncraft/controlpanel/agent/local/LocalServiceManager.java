@@ -23,10 +23,10 @@ public class LocalServiceManager implements IServiceManager {
 	}
 	
 	/**
-	 * Set the current User calling method/event.
+	 * Set the current Client calling the method/event.
 	 * @param client
 	 */
-	public void setUser(IClient client) {
+	public void setClient(IClient client) {
 		this.client = client;
 	}
 	

@@ -4,20 +4,25 @@ import java.time.LocalDateTime;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.stjerncraft.controlpanel.agent.IRemoteClient;
-import com.stjerncraft.controlpanel.api.IClient;
 import com.stjerncraft.controlpanel.api.IUser;
 
 /**
  * Remote Client communication through WebSocket.
  */
 public class WebSocketClient implements IRemoteClient {
+	private static final Logger logger = LoggerFactory.getLogger(WebSocketClient.class);
+	
 	CoreWebSocket server;
 	Session socketSession;
 	String uuid;
 	LocalDateTime connectionDateTime;
 	String agent;
+	
+	volatile boolean isConnected; //Set to false when disconnecting from our end(Don't handle data while waiting for clean disconnect)
 	
 	WriteCallback writeCallback;
 	
@@ -26,6 +31,8 @@ public class WebSocketClient implements IRemoteClient {
 		this.socketSession = socketSession;
 		this.uuid = uuid;
 		this.connectionDateTime = LocalDateTime.now();
+		
+		isConnected = true;
 		
 		writeCallback = new WriteCallback() {
 			
@@ -53,7 +60,10 @@ public class WebSocketClient implements IRemoteClient {
 
 	@Override
 	public void disconnect(String reason) {
+		//Note: We assume close is thread safe, since it will enqueue the actual close.
+		isConnected = false;
 		socketSession.close(CoreWebSocket.WS_CODE_NORMAL, reason);
+		logger.info("Disconnecting remote client " + uuid + " for reason: " + reason);
 	}
 
 	/**
@@ -63,6 +73,9 @@ public class WebSocketClient implements IRemoteClient {
 	 */
 	@Override
 	public void sendMessage(String msg) {
+		if(!isConnected)
+			return;
+		
 		socketSession.getRemote().sendString(msg, writeCallback);
 	}
 
@@ -80,5 +93,10 @@ public class WebSocketClient implements IRemoteClient {
 	@Override
 	public String getAgent() {
 		return agent;
+	}
+
+	@Override
+	public boolean isConnected() {
+		return isConnected;
 	}
 }

@@ -31,6 +31,7 @@ public interface ISession {
 	 * @param serializedCall The serialized JSON, containing the method name and arguments.
 	 * @param returnCallback Callback for the method return data. Can be null to ignore the return value.
 	 * 	  For methods with Void return, the callback will still be called once the method has been called on the Service Provider.
+	 *    Note: Callback must be called on the main thread, and does not need to be thread safe!
 	 */
 	public void callMethod(String methodJson, Consumer<String> returnCallback);
 	

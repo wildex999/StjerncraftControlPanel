@@ -97,7 +97,7 @@ class ServiceApiProcessor {
 		
 		//TODO: Compress the name somehow? Sort the methods by their signature name so we can append a number instead?)
 		Method newMethod = new Method(getMethodSignature(method), method.getSimpleName().toString());
-		procEnv.getMessager().printMessage(Kind.WARNING, "TEST: " + newMethod);
+		//procEnv.getMessager().printMessage(Kind.WARNING, "TEST: " + newMethod);
 		
 		//Return type
 		TypeMirror returnType = method.getReturnType();

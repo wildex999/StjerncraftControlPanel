@@ -13,6 +13,15 @@ public interface IRemoteClient extends IClient {
 	
 	/**
 	 * Disconnect the client, ending any existing sessions.
+	 * This must be thread safe, as it can be called from a worker thread.
 	 */
 	void disconnect(String reason);
+	
+	/**
+	 * Whether this Client is connected.
+	 * If this is false, any message received and sent should be ignored.
+	 * This must be thread safe.
+	 * @return
+	 */
+	boolean isConnected();
 }

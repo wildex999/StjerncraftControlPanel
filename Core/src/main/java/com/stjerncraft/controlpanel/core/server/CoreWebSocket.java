@@ -40,11 +40,12 @@ public class CoreWebSocket {
 	public void onConnect(Session session) {
 		//TODO: Disconnect the user if we do not get a version message in x seconds. 
 		//TODO: The websocket has a 30 second timeout, but we might need a specific check to protect against unknown messages?
-		logger.info("WebSocket Connect from " + session.getRemoteAddress());
 		
 		WebSocketClient client = new WebSocketClient(this, session, UUID.randomUUID().toString());
 		sessions.put(session, client);
 		clientManager.addClient(client);
+		
+		logger.info("WebSocket Connect from " + session.getRemoteAddress() + ". Assigned UUID: " + client.getUuid());
 	}
 	
 	@OnWebSocketClose
@@ -55,8 +56,11 @@ public class CoreWebSocket {
 		if(client == null)
 			return;
 		
-		//TODO: End all Service Sessions for this client
-		//TODO: Must be thread safe
+		//Note: This is most likely happening in a Jetty worker thread, so we have to be careful.
+		//Both clientManager.removeClient and sessions.remove are thread safe, working on concurrent hashmaps.
+		//The clientManager might be working on the clients at this point and might try to send messages, which will cause an error.
+		//In that case we might have multiple threads trying to remove the client at the same time. 
+		//Worst case we get multiple log messages about the disconnect.
 		clientManager.removeClient(client);
 		sessions.remove(session);
 	}
@@ -65,7 +69,7 @@ public class CoreWebSocket {
 	public void message(Session session, String message) throws IOException {
 		IRemoteClient client = sessions.get(session);
 		if(client == null)
-			return;
+			return; //Ignore messages from clients which have been disconnected
 		
 		clientManager.receiveMessage(client, message);
 	}

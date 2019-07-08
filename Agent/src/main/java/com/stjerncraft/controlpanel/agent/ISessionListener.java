@@ -1,5 +1,8 @@
 package com.stjerncraft.controlpanel.agent;
 
+/**
+ * NOTE: These methods are NOT thread safe. They should always be called on the main thread!
+ */
 public interface ISessionListener {
 	/**
 	 * Called by the Agent when the session with the Client has been accepted.

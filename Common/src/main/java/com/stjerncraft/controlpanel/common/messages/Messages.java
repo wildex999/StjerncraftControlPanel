@@ -21,6 +21,7 @@ public class Messages<C> {
 		parserMap = new HashMap<>();
 	}
 	
+	
 	/**
 	 * Register the common messages
 	 */

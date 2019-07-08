@@ -1,5 +1,6 @@
 package com.stjerncraft.controlpanel.api.processor;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,6 +34,10 @@ class ServiceApiInfo {
 		}
 		
 		return null;
+	}
+	
+	public Collection<Method> getMethods() {
+		return methods;
 	}
 	
 	@Override

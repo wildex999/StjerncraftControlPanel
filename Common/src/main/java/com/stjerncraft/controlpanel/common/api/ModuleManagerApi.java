@@ -45,7 +45,7 @@ public interface ModuleManagerApi {
 	
 	/**
 	 * Listen for Module events, like Modules being added, activated, removed etc.
-	 * Note: Event will only be sent to user if the user has the permissions to see the Module.
+	 * Note: Event will only ever include modules which a given user has permissions to see.
 	 */
 	@EventHandler(eventData=ModuleEvent.class)
 	public boolean listenForModuleEvents();

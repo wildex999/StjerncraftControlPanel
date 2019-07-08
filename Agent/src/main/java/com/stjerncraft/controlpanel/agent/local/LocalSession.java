@@ -27,7 +27,8 @@ public class LocalSession implements ISession {
 	boolean hasStarted;
 	
 	ListenerHandler<ISessionListener> listeners;
-	Map<Integer, IEventSubscription> eventSubscriptions;
+	Map<Integer, IEventSubscription> eventSubscriptions; //Key: Subscription ID
+	int subscriptionIdCounter;
 
 	public LocalSession(LocalAgent agent, IRemoteClient client, LocalServiceProvider serviceProvider, LocalServiceApi api, int sessionId) {
 		this.agent = agent;
@@ -40,6 +41,7 @@ public class LocalSession implements ISession {
 		hasStarted = false;
 		listeners = new ListenerHandler<>();
 		eventSubscriptions = new HashMap<>();
+		subscriptionIdCounter = 0;
 	}
 	
 	@Override
@@ -82,7 +84,9 @@ public class LocalSession implements ISession {
 		if(!exists || !hasStarted)
 			return;
 		
-		//TODO: Setup the Context in ServiceManager
+		//Setup the Context in ServiceManager
+		LocalServiceManager manager = agent.serviceManager;
+		manager.setClient(client);
 		
 		String ret = api.getGeneratedApi().callMethod(serviceProvider.getServiceProvider(), methodJson);
 		if(returnCallback != null)
@@ -96,18 +100,23 @@ public class LocalSession implements ISession {
 		
 		//Setup the Context in ServiceManager
 		LocalServiceManager manager = agent.serviceManager;
-		LocalEventSubscription subscription = new LocalEventSubscription(this);
+		LocalEventSubscription subscription = new LocalEventSubscription(this, subscriptionIdCounter++);
+		manager.setClient(client);
 		manager.setEventContext(EventAction.Subscribe, subscription);
 		
-		boolean ret = api.getGeneratedApi().callEventHandler(serviceProvider.getServiceProvider(), methodJson);
+		//Handle overflow. This is either a bug, or someone is abusing the server.
+		if(subscriptionIdCounter < 0)
+			throw new RuntimeException("Subscription ID overflow!");
 		
+		boolean ret = api.getGeneratedApi().callEventHandler(serviceProvider.getServiceProvider(), methodJson);
 		if(!ret) {
-			//TODO: Remove subscription
+			//Subscription was denied
+			subscriptionIdCounter--; //TODO: The fact that the ID's of failed requests can be re-used should be properly explained
 			return null;
 		}
 		
-		//TODO: Return Event Subscription
-		return null;
+		eventSubscriptions.put(subscription.getSubscriptionId(), subscription);
+		return subscription;
 	}
 	
 	@Override
@@ -115,11 +124,15 @@ public class LocalSession implements ISession {
 		if(!exists || !hasStarted)
 			return;
 		
+		subscription = eventSubscriptions.remove(subscription.getSubscriptionId());
+		if(subscription == null)
+			return;
+		
 		//Setup the Context in ServiceManager
 		LocalServiceManager manager = agent.serviceManager;
 		manager.setEventContext(EventAction.Unsubscribe, subscription);
 		
-		//TODO: Call method
+		//boolean ret = api.getGeneratedApi().callEventHandler(serviceProvider, eventMethodJson);
 	}
 
 	@Override

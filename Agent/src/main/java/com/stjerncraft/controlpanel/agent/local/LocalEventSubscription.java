@@ -7,9 +7,10 @@ import com.stjerncraft.controlpanel.api.IEventSubscription;
  * Event Subscription from Remote Client to a Local Service Provider
  */
 public class LocalEventSubscription implements IEventSubscription {
-	LocalSession session;
+	private LocalSession session;
+	private int subscriptionId;
 	
-	public LocalEventSubscription(LocalSession session) {
+	public LocalEventSubscription(LocalSession session, int subscriptionId) {
 		this.session = session;
 	}
 	
@@ -20,14 +21,18 @@ public class LocalEventSubscription implements IEventSubscription {
 
 	@Override
 	public void end() {
-		// TODO Auto-generated method stub
-		
+		session.eventUnsubscribe(this);
 	}
 
 	@Override
 	public void sendEvent(Object data) {
 		// TODO Auto-generated method stub
 		
+	}
+	
+	@Override
+	public int getSubscriptionId() {
+		return subscriptionId;
 	}
 
 }

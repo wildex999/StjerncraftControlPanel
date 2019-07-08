@@ -16,6 +16,7 @@ import com.stjerncraft.controlpanel.agent.ServiceProvider;
 import com.stjerncraft.controlpanel.common.ServiceApi;
 import com.stjerncraft.controlpanel.common.Version;
 import com.stjerncraft.controlpanel.common.messages.Message;
+import com.stjerncraft.controlpanel.common.messages.MessageCallMethod;
 import com.stjerncraft.controlpanel.common.messages.MessageEndSession;
 import com.stjerncraft.controlpanel.common.messages.MessageSessionAccepted;
 import com.stjerncraft.controlpanel.common.messages.MessageStartSession;
@@ -44,11 +45,12 @@ public class ClientManager {
 		clients = ConcurrentHashMap.newKeySet();
 		messageQueue = new ConcurrentLinkedQueue<>();
 		
-		//Setup message handlers
+		//Setup message handlers on messages received from client
 		messages = new Messages<>();
 		messages.registerMessages();
 		messages.setHandler(MessageVersion.class, (msg, s) -> checkVersion(msg, s));
 		messages.setHandler(MessageStartSession.class, (msg, s) -> startSession(msg, s));
+		messages.setHandler(MessageCallMethod.class, (msg, s) -> callMethod(msg, s));
 	}
 	
 	/**
@@ -84,6 +86,9 @@ public class ClientManager {
 	 * @param client
 	 */
 	public void receiveMessage(IRemoteClient client, String message) {
+		if(!client.isConnected())
+			return;
+		
 		try {
 			Message msg = messages.decode(message);
 			
@@ -103,7 +108,7 @@ public class ClientManager {
 	public void handleMessages() {
 		for(MessageAction action; (action = messageQueue.poll()) != null;) {
 			IRemoteClient client = action.client;
-			if(!clients.contains(client))
+			if(!clients.contains(client) || !client.isConnected())
 				continue; //Ignore unhandled messages from ended sessions
 			
 			try {
@@ -123,7 +128,7 @@ public class ClientManager {
 	 * @param msg The message to encode and send.
 	 */
 	private void sendMessage(IRemoteClient client, Message msg) {
-		if(!clients.contains(client))
+		if(!clients.contains(client) || !client.isConnected())
 			return;
 		
 		client.sendMessage(messages.encode(msg));
@@ -141,6 +146,7 @@ public class ClientManager {
 		if(!msg.equals(msgVersion)) {
 			String err = "Version mismatch: " + msg.versionMajor + "." + msg.versionMinor + "." + msg.versionFix + " != " + 
 						Version.Major + "." + Version.Minor + "." + Version.Fix;
+			logger.warn(err);
 			client.disconnect(err);
 			return;
 		}
@@ -180,6 +186,38 @@ public class ClientManager {
 				MessageEndSession msg = new MessageEndSession(newSession.getSessionId(), reason);
 				sendMessage(client, msg);
 			}
+		});
+	}
+	
+	/**
+	 * Call a method 
+	 * @param msg
+	 * @param client
+	 */
+	private void callMethod(MessageCallMethod msg, IRemoteClient client) {
+		ISession session = core.getSession(msg.sessionId);
+		if(session == null)
+		{
+			//The session might have been ended before we received this message, ignore it for now.
+			logger.warn("Trying to call method on unknown/ended session");
+			//TODO: We might need to be more strict here, and have a session history we can check against?
+			return;
+		}
+		
+		if(session.getRemoteClient() != client)
+		{
+			//Trying to use a session which doesn't belong to the client.
+			//We see that as a possible invalid state, and disconnect the client.
+			client.disconnect("callMethod on invalid session");
+			return;
+		}
+		
+		session.callMethod(msg.methodJson, (returnJson) -> {
+			if(!client.isConnected())
+				return;
+			
+			//Pass on the return value to the client
+			client.sendMessage(returnJson);
 		});
 	}
 	

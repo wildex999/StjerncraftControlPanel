@@ -20,4 +20,11 @@ public interface IEventSubscription {
 	 * @param data The DataObject to send. Should not be modified after passing to sendEvent!
 	 */
 	public void sendEvent(Object data);
+	
+	/**
+	 * Session unique identifier for this Event Subscription.
+	 * NOTE: In the case of rejected subscriptions, this can be re-used.
+	 * @return
+	 */
+	public int getSubscriptionId();
 }

@@ -88,22 +88,40 @@ public class Processor extends AbstractProcessor {
 				throw new IllegalArgumentException("[" + el.getSimpleName() + "] The annotation " + DataObjectFactory.class.getCanonicalName() + " can only be placed on a class or interface! ");
 			try {
 				dataObjectFactoryGenerator.generateFactoryClass(processingEnv.getFiler(), ((TypeElement)el).getQualifiedName().toString());
+				msg.printMessage(Kind.NOTE, "Generated DataObjectFactory at " + ((TypeElement)el).getQualifiedName().toString());
 			} catch (IOException e) {
 				msg.printMessage(Kind.ERROR, "Failed to write DataObjectFactory Class: " + e.getMessage());
 			}
 		}
 		
 		//For API:
-		//- Generate js/ts library for users not using Java(TODO)
-		//- Generate proxy API, which will be given per user and include things like user data:
+		//- Generate Java Client Library for Async Method calls towards the API.
+		// This library is just a wrapper which will proxy the call to a Client/Module Core, and then return a Promise object for the reply.
+		//
+		//- TODO: Generate js/ts library for users not using Java
+		//
+		//- Generate the Server/Agent side API class, which does the actual calls on the Service Provider.
+		// This will take in a JSON Method call and deserialize it, perform the actual call, and then serialize the return value.
+		//
+		//- TODO: Generate proxy API, which will be given per user and include things like user data:
 		// So an user of a API would do ServiceManager.getApi(ApiInterface). This would return the generated class: ApiInterfaceProxy implements ApiInterface.
 		// This proxy would simply relay the method calls, after setting the correct user: myMethod(int nr) { serviceManager.setUser(user); apiImplementation.myMethod(nr); }
+		// Note: Do we need this? ServiceManager will set User before remote calls. All local calls be considered User = System unless explicitly set?
+		
 		ServiceApiClassGenerator apiClassGenerator = new ServiceApiClassGenerator(dataObjectProc);
 		try {
 			for(ServiceApiInfo api : serviceApiProc.apis.values()) {
 				if(generated.contains(api))
 					continue;
+				
+				//Generate the Client Library
+				
+				
+				//TODO: Generate JS/TS Client Library, which will proxy calls through the Client/Module Core.
+				
+				//Generate the Service API class, which will do the actual translation from JSON to a Method call and back.
 				apiClassGenerator.generateClassForApi(processingEnv.getFiler(), api);
+				
 				msg.printMessage(Kind.NOTE, "Generated Service API: " + api.getName());
 				generated.add(api);
 			}
