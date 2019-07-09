@@ -95,8 +95,9 @@ public class Processor extends AbstractProcessor {
 		}
 		
 		//For API:
+		//
 		//- Generate Java Client Library for Async Method calls towards the API.
-		// This library is just a wrapper which will proxy the call to a Client/Module Core, and then return a Promise object for the reply.
+		// This library is just a wrapper which will proxy the call to a Client/Module Core, and give the return value to a callback
 		//
 		//- TODO: Generate js/ts library for users not using Java
 		//
@@ -109,13 +110,14 @@ public class Processor extends AbstractProcessor {
 		// Note: Do we need this? ServiceManager will set User before remote calls. All local calls be considered User = System unless explicitly set?
 		
 		ServiceApiClassGenerator apiClassGenerator = new ServiceApiClassGenerator(dataObjectProc);
+		ClientLibraryGenerator clientLibraryGenerator = new ClientLibraryGenerator(dataObjectProc);
 		try {
 			for(ServiceApiInfo api : serviceApiProc.apis.values()) {
 				if(generated.contains(api))
 					continue;
 				
 				//Generate the Client Library
-				
+				clientLibraryGenerator.generateClientLibrary(processingEnv.getFiler(), api);
 				
 				//TODO: Generate JS/TS Client Library, which will proxy calls through the Client/Module Core.
 				

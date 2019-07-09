@@ -37,9 +37,25 @@ class Method {
 		parameters.add(par);
 	}
 	
+	public List<Field> getParameters() {
+		return parameters;
+	}
+	
 	public void setReturnType(FieldType type, boolean isArray) {
 		returnType = type;
 		isReturnArray = isArray;
+	}
+	
+	public String getName() {
+		return methodName;
+	}
+	
+	public FieldType getReturnType() {
+		return returnType;
+	}
+	
+	public boolean isReturnArray() {
+		return isReturnArray;
 	}
 	
 	@Override

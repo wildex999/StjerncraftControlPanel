@@ -132,6 +132,7 @@ public class LocalSession implements ISession {
 		LocalServiceManager manager = agent.serviceManager;
 		manager.setEventContext(EventAction.Unsubscribe, subscription);
 		
+		//TODO: Call event handler with unsubscribe. What eventMethodJson to send?
 		//boolean ret = api.getGeneratedApi().callEventHandler(serviceProvider, eventMethodJson);
 	}
 
