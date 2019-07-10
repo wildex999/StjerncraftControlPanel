@@ -8,6 +8,7 @@ import javax.lang.model.element.Modifier;
 import org.json.JSONArray;
 
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.MethodSpec.Builder;
@@ -94,7 +95,9 @@ class DataObjectClassGenerator {
 		method.addStatement("if(jsonObj.length() == 0) return null");
 		
 		//Parse
-		String[] varNames = Parse.parseVariables(dataObject.fields, "jsonObj", method, dataObjects, "");
+		CodeBlock.Builder parserBuilder = CodeBlock.builder();
+		String[] varNames = Parse.parseVariables(dataObject.fields, "jsonObj", parserBuilder, dataObjects, "");
+		method.addCode(parserBuilder.build());
 		assert varNames.length == dataObject.fields.size();
 		
 		//Assign

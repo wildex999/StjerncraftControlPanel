@@ -9,6 +9,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
@@ -147,7 +148,9 @@ class ServiceApiClassGenerator {
 			//Parse arguments
 			String[] varNames;
 			try {
-				varNames = Parse.parseVariables(apiMethod.parameters, "args", method, dataObjects, apiMethod.name);
+				CodeBlock.Builder parserBuilder = CodeBlock.builder();
+				varNames = Parse.parseVariables(apiMethod.parameters, "args", parserBuilder, dataObjects, apiMethod.name);
+				method.addCode(parserBuilder.build());
 			}
 			catch(IllegalArgumentException e) {
 				throw new IllegalArgumentException("Error generating variable parser in callMethod for " + apiMethod + " while parsing api " + api, e);

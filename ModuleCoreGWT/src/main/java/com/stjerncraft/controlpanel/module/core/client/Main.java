@@ -3,6 +3,7 @@ package com.stjerncraft.controlpanel.module.core.client;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.shared.GWT;
 import com.stjerncraft.controlpanel.common.Version;
+import com.stjerncraft.controlpanel.common.api.CoreApiClient;
 import com.stjerncraft.controlpanel.common.messages.MessageSessionAccepted;
 import com.stjerncraft.controlpanel.common.messages.MessageSessionState;
 import com.stjerncraft.controlpanel.common.messages.MessageVersion;
@@ -15,6 +16,7 @@ public class Main implements EntryPoint {
 	
 	@Override
 	public void onModuleLoad() {
+		CoreApiClient client;
 		messages = new Messages();
 		messages.setHandler(MessageVersion.class, (msg, ws) -> {
 			GWT.log("GOT VERSION: " + msg.versionMajor + "." + msg.versionMinor + "." + msg.versionFix + " on Socket: " + ws);
