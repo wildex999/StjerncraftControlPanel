@@ -24,7 +24,7 @@ public interface IClientCore {
 	 * @param sessionId The ID of the session with the Service Provider.
 	 * @param JsonMethod A Serialized JSON object with the method call.
 	 * @param handler The handler which will be called for the different events. The Value will always be the serialized JSON object. 
-	 * @return A callId which will be provided on the OnSubscribed for this call.
+	 * @return A callId which will be provided on the OnSubscribed for this call. -1 Is returned if it fails to Subscribe at this point.
 	 */
 	int callSubscribe(int sessionId, String JsonMethod, IClientSubscriptionHandler<String> handler);
 	

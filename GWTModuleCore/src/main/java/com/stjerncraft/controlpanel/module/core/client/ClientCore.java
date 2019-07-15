@@ -20,6 +20,7 @@ import com.stjerncraft.controlpanel.common.messages.MessageCallMethod;
 import com.stjerncraft.controlpanel.common.messages.MessageCallMethodReply;
 import com.stjerncraft.controlpanel.common.messages.MessageCallSubscribe;
 import com.stjerncraft.controlpanel.common.messages.MessageCallSubscribeReply;
+import com.stjerncraft.controlpanel.common.messages.MessageEndSubscription;
 import com.stjerncraft.controlpanel.common.messages.MessageSessionAccepted;
 import com.stjerncraft.controlpanel.common.messages.MessageSessionState;
 import com.stjerncraft.controlpanel.common.messages.MessageStartSession;
@@ -33,13 +34,17 @@ import com.stjerncraft.controlpanel.module.core.websocket.IWebsocketListener;
 import com.stjerncraft.controlpanel.module.core.websocket.WebSocket;
 import com.stjerncraft.controlpanel.module.core.websocket.WebSocket.ReadyState;
 
+import jsinterop.annotations.JsType;
+
+@JsType
 public class ClientCore implements IClientCore {
 	static Logger logger = Logger.getLogger("ClientCore");
+	static ClientCore instance = null;
 	
 	private Map<Integer, ClientSession> pendingSessions; //Map of requestId to Pending Session
 	private Map<Integer, ClientSession> sessions; //Map of Session ID to Session
-	private Map<Integer, IClientSubscriptionHandler<String>> pendingSubscriptions; //Map of callId to Pending Subscription
-	private Map<Integer, IClientSubscriptionHandler<String>> subscriptions; //Map of SubscriptionId to Subscription
+	private Map<Integer, ClientSubscription> pendingSubscriptions; //Map of callId to Pending Subscription
+	private Map<Integer, ClientSubscription> subscriptions; //Map of SubscriptionId to Subscription
 	private Map<Integer, Consumer<String>> callMethodCallbacks; //Map of callId to return callback for callMethod.
 	
 	private String server;
@@ -55,12 +60,14 @@ public class ClientCore implements IClientCore {
 	protected int callIdCounter = 0; //Call ID for CallMethod calls.
 	
 	public ClientCore(String server) {
+		instance = this;
+		
 		this.server = server;
-		pendingSessions = new HashMap<Integer, ClientSession>();
-		sessions = new HashMap<Integer, ClientSession>();
-		callMethodCallbacks = new HashMap<Integer, Consumer<String>>();
-		pendingSubscriptions = new HashMap<Integer, IClientSubscriptionHandler<String>>();
-		subscriptions = new HashMap<Integer, IClientSubscriptionHandler<String>>();
+		pendingSessions = new HashMap<>();
+		sessions = new HashMap<>();
+		callMethodCallbacks = new HashMap<>();
+		pendingSubscriptions = new HashMap<>();
+		subscriptions = new HashMap<>();
 		
 		reconnectTimer = new Timer() {
 			
@@ -83,54 +90,7 @@ public class ClientCore implements IClientCore {
 				CoreApiClient coreClient = new CoreApiClient(ClientCore.this, session.getSessionId());
 				coreClient.getAgents((agents) -> {
 					logger.info("Got Agents: " + agents);
-				});
-				
-				//TEST
-				ServiceApiInfo moduleApi = new ServiceApiInfo(ModuleManagerApiClient.getApiName(), ModuleManagerApiClient.getApiVersion());
-				ServiceProviderInfo coreServiceProvider = new ServiceProviderInfo(Statics.CORE_TEST_UUID, Statics.CORE_AGENT_UUID, null);
-				startSession(moduleApi, coreServiceProvider, new ISessionListener() {
-					
-					@Override
-					public void onStarted(ClientSession session) {
-						logger.info("MM Started");
-						ModuleManagerApiClient mm = new ModuleManagerApiClient(ClientCore.this, session.getSessionId());
-						mm.listenForModuleEvents(new IClientSubscriptionHandler<ModuleEvent>() {
-
-							@Override
-							public void OnEvent(int subscriptionId, ModuleEvent value) {
-								logger.info("EVENT: " + value.action + " | " + value.module);
-							}
-
-							@Override
-							public void OnSubscribed(int subscriptionId, int callId, boolean success) {
-								logger.info("OnSubscribed");
-								
-								mm.activateModule(new ModuleInfo("TestModule", 22), s -> {
-									logger.info("ActivateModule: " + s);
-								});
-							}
-
-							@Override
-							public void OnUnsubscribed(int subscriptionId) {
-								logger.info("OnUnsubscribed");
-							}
-						});
-					}
-					
-					@Override
-					public void onRejected(ClientSession session) {
-						// TODO Auto-generated method stub
-						
-					}
-					
-					@Override
-					public void onEnded(ClientSession session) {
-						// TODO Auto-generated method stub
-						
-					}
-				});
-				
-				
+				});	
 			}
 			
 			@Override
@@ -152,9 +112,12 @@ public class ClientCore implements IClientCore {
 		
 		messages = new Messages();
 		setupMessageHandlers();
-		logger.info("Test: " + messages.parserMap);
 		
 		connect();
+	}
+	
+	public static ClientCore getClientCore() {
+		return instance;
 	}
 	
 	/**
@@ -214,10 +177,16 @@ public class ClientCore implements IClientCore {
 
 	@Override
 	public int callSubscribe(int sessionId, String JsonMethod, IClientSubscriptionHandler<String> handler) {
-		int callId = callIdCounter++;
-		//TODO: Don't use IClientSubscriptionHandler directly, but use a ClientSubscription
+		ClientSession session = sessions.get(sessionId);
+		if(session == null || session.getCurrentState() != SessionState.ACTIVE) {
+			logger.warning("Failed to start Subscription, session " + sessionId + " is missing or in an invalid state!");
+			return -1;
+		}
 		
-		pendingSubscriptions.put(callId, handler);
+		int callId = callIdCounter++;
+		
+		ClientSubscription newSubscription = new ClientSubscription(session, -1, handler);
+		pendingSubscriptions.put(callId, newSubscription);
 		
 		messages.sendMessage(new MessageCallSubscribe(sessionId, callId, JsonMethod));
 		return callId;
@@ -226,13 +195,11 @@ public class ClientCore implements IClientCore {
 	@Override
 	public void callUnsubscribe(int subscriptionId) {
 		//TODO: unsibscribe pending?
-		IClientSubscriptionHandler<String> sub = subscriptions.remove(subscriptionId);
+		ClientSubscription sub = subscriptions.remove(subscriptionId);
 		if(sub == null)
 			return;
-		//TODO: We need the sessionId from the Subscription, use a ClientSubscription object on map instead.
-		
-		//messages.sendMessage(new MessageEndSubscription(sessionId, subscriptionId));
-		//return callId;
+
+		messages.sendMessage(new MessageEndSubscription(sub.getSession().getSessionId(), sub.getSubscriptionId()));
 	}
 	
 	private void connect() {
@@ -314,7 +281,7 @@ public class ClientCore implements IClientCore {
 		});
 		
 		messages.setHandler(MessageCallSubscribeReply.class, (msg, ws) -> {
-			IClientSubscriptionHandler<String> sub = pendingSubscriptions.remove(msg.callId);
+			ClientSubscription sub = pendingSubscriptions.remove(msg.callId);
 			if(sub == null) {
 				logger.warning("Got acceptance for unknown Subscription with Request ID: " + msg.callId);
 				return;
@@ -322,17 +289,17 @@ public class ClientCore implements IClientCore {
 			
 			if(msg.accepted)
 				subscriptions.put(msg.subscriptionId, sub);
-			sub.OnSubscribed(msg.subscriptionId, msg.callId, msg.accepted);
+			sub.getHandler().OnSubscribed(msg.subscriptionId, msg.callId, msg.accepted);
 		});
 		
 		messages.setHandler(MessageSubscriptionEvent.class, (msg, ws) -> {
 			logger.info("Got SubscriptionEvent Reply for " + msg.subscriptionId + ": " + msg.valueJson);
 			
-			IClientSubscriptionHandler<String> sub = subscriptions.remove(msg.subscriptionId);
+			ClientSubscription sub = subscriptions.remove(msg.subscriptionId);
 			if(sub == null)
 				return;
 			
-			sub.OnEvent(msg.subscriptionId, msg.valueJson);
+			sub.getHandler().OnEvent(msg.subscriptionId, msg.valueJson);
 		});
 	}
 

@@ -1,5 +1,5 @@
 subprojects {
-	configure([project(":Api"), project(":Core"), project(":Common"), project(":ModuleCoreGWT"), project(":Agent")]) {
+	configure([project(":Api"), project(":Core"), project(":Common"), project(":GWTModuleCore"), project(":Agent")]) {
 		apply plugin: 'java'
 		apply plugin: 'eclipse'
 	}
@@ -16,9 +16,9 @@ subprojects {
 def targetDir = "target"
 
 task copyModuleCore(type: Copy) {
-	evaluationDependsOn(":ModuleCoreGWT")
-	dependsOn(":ModuleCoreGWT:compileGwt")
-	from project(":ModuleCoreGWT").file("war")
+	evaluationDependsOn(":GWTModuleCore")
+	dependsOn(":GWTModuleCore:compileGwt")
+	from project(":GWTModuleCore").file("war")
 	into file("target/public")
 }
 

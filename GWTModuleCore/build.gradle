@@ -25,7 +25,7 @@ clean.doFirst {
 }
 
 compileGwt {
-	war = new File(project(':ModuleCoreGWT').projectDir, "war")
+	war = new File(project(':GWTModuleCore').projectDir, "war")
 }
 
 sourceSets {
@@ -46,7 +46,7 @@ gwt {
 	minHeapSize = "512M"
 	maxHeapSize = "1024M"
 	
-    modules 'com.stjerncraft.controlpanel.module.core.ModuleCoreGWT'
+    modules 'com.stjerncraft.controlpanel.module.core.GWTModuleCore'
 	def aptFiles = new File(project(':Common').projectDir, "/build/generated/source/apt/main")
 	
 	src += files(project(':Common').sourceSets.main.allJava.srcDirs) + files(aptFiles) + files(project(':Api').sourceSets.main.allJava.srcDirs)

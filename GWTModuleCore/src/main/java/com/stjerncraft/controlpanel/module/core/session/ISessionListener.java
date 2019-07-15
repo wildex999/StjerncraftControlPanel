@@ -1,5 +1,8 @@
 package com.stjerncraft.controlpanel.module.core.session;
 
+import jsinterop.annotations.JsType;
+
+@JsType
 public interface ISessionListener {
 	/**
 	 * Service Provider has accepted the session.

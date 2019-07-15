@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.stjerncraft.controlpanel.api.IClient;
 import com.stjerncraft.controlpanel.api.IEventSubscription;
 import com.stjerncraft.controlpanel.api.IServiceManager;
 import com.stjerncraft.controlpanel.api.IServiceProvider;
@@ -73,7 +74,12 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 
 	@Override
 	public boolean activateModule(ModuleInfo module) {
+		IClient client = serviceManager.getClient();
+		if(client != null && client.getUser() == null)
+			return false;
+		
 		//TODO: Check if user has permission to activate the module
+		
 		String id = module.getId();
 		Module storedModule = modules.get(id);
 		if(storedModule == null)
@@ -103,6 +109,10 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 
 	@Override
 	public boolean deactivateModule(ModuleInfo module) {
+		IClient client = serviceManager.getClient();
+		if(client != null && client.getUser() == null)
+			return false;
+		
 		//TODO: Check if the user has permission to deactivate the module
 		return activeModules.remove(module.getId()) != null;
 	}
@@ -135,6 +145,7 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 	 */
 	private void broadcastEvent(ModuleEvent event) {
 		for(IEventSubscription subscription : subscriptions.values()) {
+			//TODO: Verify that subscription user has permission to "see" this Module(And thus any events involving it)
 			subscription.sendEvent(event);
 		}
 	}

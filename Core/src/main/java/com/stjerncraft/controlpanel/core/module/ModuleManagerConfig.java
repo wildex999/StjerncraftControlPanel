@@ -57,6 +57,6 @@ public class ModuleManagerConfig {
 	
 	private void verify() throws ModuleManagerConfigLoadException {
 		if(Strings.isNullOrEmpty(location))
-			throw new ModuleManagerConfigLoadException("descriptiveName", "Required field is missing.");
+			throw new ModuleManagerConfigLoadException("location", "Required field is missing.");
 	}
 }
