@@ -32,9 +32,29 @@ public class WebSocket {
 	
 	private JavaScriptObject wsObject;
 	private List<IWebsocketListener> listeners;
-		
+	
+	private String url;
+	private String[] protocols;
+	
+	/**
+	 * Create and Open the WebSocket connection
+	 * @param url
+	 * @param protocols
+	 */
 	public WebSocket(String url, String... protocols) {
 		listeners = new ArrayList<>();
+		this.url = url;
+		this.protocols = protocols;
+		open();
+	}
+	
+	/**
+	 * Open the WebSocket connection if it's closed.
+	 */
+	public void open() {
+		if(wsObject != null && getReadyState() != ReadyState.CLOSED)
+			return;
+		
 		wsObject = create(url, protocols);
 		setupInternalListeners(wsObject);
 	}
@@ -58,7 +78,8 @@ public class WebSocket {
 	}
 	
 	public ReadyState getReadyState() {
-		switch(getJSReadyState()) {
+		int state = getJSReadyState();
+		switch(state) {
 		case 0:
 			return ReadyState.CONNECTING;
 		case 1:
@@ -116,7 +137,7 @@ public class WebSocket {
 		return this.@com.stjerncraft.controlpanel.module.core.websocket.WebSocket::wsObject.extensions;
 	}-*/;
 		
-	private native Integer getJSReadyState() /*-{
+	private native int getJSReadyState() /*-{
 		return this.@com.stjerncraft.controlpanel.module.core.websocket.WebSocket::wsObject.readyState;
 	}-*/;
 	

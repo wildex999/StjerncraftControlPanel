@@ -72,7 +72,11 @@ public class Core {
 		
 		//TODO: Do permission check for whether the user is allowed to start a session with this service/api/agent.
 		
+		logger.info("Client " + client + " is starting Session for API " + api + " with Service Provider " + provider);
 		ISession session = provider.getAgent().startSession(api, provider, client, getNextSessionId());
+		if(session == null)
+			return null;
+		
 		addSession(session);
 				
 		return session;
@@ -356,7 +360,7 @@ public class Core {
 			id = getNextSessionId();
 		}
 		
-		return 0;
+		return id;
 	}
 
 }

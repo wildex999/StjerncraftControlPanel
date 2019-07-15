@@ -1,6 +1,7 @@
 package com.stjerncraft.controlpanel.api.processor;
 
 import com.stjerncraft.controlpanel.api.processor.FieldType;
+import com.stjerncraft.controlpanel.api.IUnsubscribeHandler;
 
 public enum BaseType {
 	Boolean("Boolean", Boolean.class.getCanonicalName(), "boolean"), //Name, class path, primitive name
@@ -12,7 +13,10 @@ public enum BaseType {
 	Float("Float", Float.class.getCanonicalName(), "float"),
 	Double("Double", Double.class.getCanonicalName(), "double"),
 	String("String", String.class.getCanonicalName(), "String"),
-	Void("Void", Void.class.getCanonicalName(), "void");
+	Void("Void", Void.class.getCanonicalName(), "void"),
+	
+	//Special Types
+	IUnsubscribeHandler("IUnsubscribeHandler", IUnsubscribeHandler.class.getCanonicalName());
 	
 	public FieldType type;
 	

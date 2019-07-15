@@ -19,8 +19,8 @@ public interface IClient {
 	public LocalDateTime getDateConnected();
 	
 	/**
-	 * The client defined agent name. For example "WebClient 1.2"
+	 * The client defined name. For example "WebClient 1.2"
 	 * @return
 	 */
-	public String getAgent();
+	public String getName();
 }

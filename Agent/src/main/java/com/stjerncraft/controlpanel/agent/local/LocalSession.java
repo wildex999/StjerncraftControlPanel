@@ -2,13 +2,13 @@ package com.stjerncraft.controlpanel.agent.local;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.stjerncraft.controlpanel.agent.IRemoteClient;
 import com.stjerncraft.controlpanel.agent.ISession;
 import com.stjerncraft.controlpanel.agent.ISessionListener;
 import com.stjerncraft.controlpanel.agent.ServiceProvider;
-import com.stjerncraft.controlpanel.api.EventAction;
 import com.stjerncraft.controlpanel.api.IEventSubscription;
 import com.stjerncraft.controlpanel.common.ServiceApi;
 import com.stjerncraft.controlpanel.common.util.ListenerHandler;
@@ -27,7 +27,7 @@ public class LocalSession implements ISession {
 	boolean hasStarted;
 	
 	ListenerHandler<ISessionListener> listeners;
-	Map<Integer, IEventSubscription> eventSubscriptions; //Key: Subscription ID
+	Map<Integer, LocalEventSubscription> eventSubscriptions; //Key: Subscription ID
 	int subscriptionIdCounter;
 
 	public LocalSession(LocalAgent agent, IRemoteClient client, LocalServiceProvider serviceProvider, LocalServiceApi api, int sessionId) {
@@ -94,46 +94,53 @@ public class LocalSession implements ISession {
 	}
 	
 	@Override
-	public IEventSubscription eventSubscribe(String methodJson) {
-		if(!exists || !hasStarted)
-			return null;
+	public void callSubscribe(String methodJson, Consumer<Integer> subscribeCallback, BiConsumer<Integer, String> eventCallback, Consumer<Integer> unsubscribeCallback) {
+		if(!exists || !hasStarted) {
+			if(subscribeCallback != null)
+				subscribeCallback.accept(null);
+			return;
+		}
 		
 		//Setup the Context in ServiceManager
 		LocalServiceManager manager = agent.serviceManager;
-		LocalEventSubscription subscription = new LocalEventSubscription(this, subscriptionIdCounter++);
+		LocalEventSubscription subscription = new LocalEventSubscription(this, subscriptionIdCounter++, eventCallback, unsubscribeCallback);
 		manager.setClient(client);
-		manager.setEventContext(EventAction.Subscribe, subscription);
+		manager.setEventContext(subscription);
 		
 		//Handle overflow. This is either a bug, or someone is abusing the server.
 		if(subscriptionIdCounter < 0)
 			throw new RuntimeException("Subscription ID overflow!");
 		
-		boolean ret = api.getGeneratedApi().callEventHandler(serviceProvider.getServiceProvider(), methodJson);
-		if(!ret) {
+		subscription.unsubscribeHandler = api.getGeneratedApi().callEventHandler(serviceProvider.getServiceProvider(), methodJson, subscription);
+		if(subscription.unsubscribeHandler == null) {
 			//Subscription was denied
 			subscriptionIdCounter--; //TODO: The fact that the ID's of failed requests can be re-used should be properly explained
-			return null;
+			if(subscribeCallback != null)
+				subscribeCallback.accept(null);
+			return;
 		}
 		
 		eventSubscriptions.put(subscription.getSubscriptionId(), subscription);
-		return subscription;
+		if(subscribeCallback != null)
+			subscribeCallback.accept(subscription.getSubscriptionId());
 	}
 	
 	@Override
-	public void eventUnsubscribe(IEventSubscription subscription) {
+	public void callUnsubscribe(IEventSubscription subscription) {
 		if(!exists || !hasStarted)
 			return;
 		
-		subscription = eventSubscriptions.remove(subscription.getSubscriptionId());
-		if(subscription == null)
+		LocalEventSubscription localSubscription = eventSubscriptions.remove(subscription.getSubscriptionId());
+		if(localSubscription == null)
 			return;
 		
 		//Setup the Context in ServiceManager
 		LocalServiceManager manager = agent.serviceManager;
-		manager.setEventContext(EventAction.Unsubscribe, subscription);
+		manager.setClient(client);
+		manager.setEventContext(localSubscription);
 		
-		//TODO: Call event handler with unsubscribe. What eventMethodJson to send?
-		//boolean ret = api.getGeneratedApi().callEventHandler(serviceProvider, eventMethodJson);
+		localSubscription.unsubscribeHandler.onUnsubscribe(localSubscription);
+		localSubscription.getUnsubscribeCallback().accept(localSubscription.getSubscriptionId());
 	}
 
 	@Override

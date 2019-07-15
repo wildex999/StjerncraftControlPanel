@@ -1,7 +1,9 @@
 package com.stjerncraft.controlpanel.api;
 
+import java.util.function.Function;
+
 /**
- * Event Subscription stored by the Agent, providing the ability to send event data, and end the subscription.
+ * Event Subscription used by the Agent and Service Provider, providing the ability to send event data, and end the subscription.
  */
 public interface IEventSubscription {
 	/**
@@ -14,6 +16,13 @@ public interface IEventSubscription {
 	 * End this subscription
 	 */
 	public void end();
+	
+	/**
+	 * Serializer takes in the data of a type specified for the EventHandler, and serializes it into a JSON array containing the value.
+	 * This is set by the Generated API class when the Client subscribes.
+	 * @param serializer
+	 */
+	public void setDataSerializer(Function<Object, String> serializer);
 	
 	/**
 	 * Send an event to the subscribed user.

@@ -11,13 +11,13 @@ class Method {
 	protected String name;
 	protected String methodName; //The actual name of the method which is called. Might differ from name when multiple methods of the same name exists
 	protected List<Field> parameters = new ArrayList<Field>(); //Use list to retain order
+	protected String comments; //The Javadoc/Comment for this Method
 	
 	protected FieldType returnType;
 	protected boolean isReturnArray;
 	
 	//EventHandler
 	protected boolean isEventHandler;
-	protected FieldType eventDataType;
 	
 
 	public Method(String name) {
@@ -50,12 +50,20 @@ class Method {
 		return methodName;
 	}
 	
+	public boolean isEventHandler() {
+		return isEventHandler;
+	}
+	
 	public FieldType getReturnType() {
 		return returnType;
 	}
 	
 	public boolean isReturnArray() {
 		return isReturnArray;
+	}
+	
+	public String getComments() {
+		return comments;
 	}
 	
 	@Override
@@ -73,8 +81,6 @@ class Method {
 		if(isReturnArray != other.isReturnArray)
 			return false;
 		if(isEventHandler != other.isEventHandler)
-			return false;
-		if(eventDataType != other.eventDataType)
 			return false;
 		
 		return true;

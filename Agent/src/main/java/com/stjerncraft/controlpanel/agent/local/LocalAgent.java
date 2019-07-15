@@ -114,7 +114,7 @@ public class LocalAgent implements IAgent<LocalServiceProvider, LocalServiceApi>
 			}
 		}
 		
-		serviceProvider.onRegister(null);
+		serviceProvider.onRegister(serviceManager);
 	}
 	
 	public void removeServiceProvider(IServiceProvider serviceProvider) {

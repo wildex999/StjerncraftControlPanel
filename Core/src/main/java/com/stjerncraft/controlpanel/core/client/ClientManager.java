@@ -5,6 +5,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,9 +19,14 @@ import com.stjerncraft.controlpanel.common.ServiceApi;
 import com.stjerncraft.controlpanel.common.Version;
 import com.stjerncraft.controlpanel.common.messages.Message;
 import com.stjerncraft.controlpanel.common.messages.MessageCallMethod;
+import com.stjerncraft.controlpanel.common.messages.MessageCallMethodReply;
+import com.stjerncraft.controlpanel.common.messages.MessageCallSubscribe;
+import com.stjerncraft.controlpanel.common.messages.MessageCallSubscribeReply;
 import com.stjerncraft.controlpanel.common.messages.MessageEndSession;
+import com.stjerncraft.controlpanel.common.messages.MessageEndSubscription;
 import com.stjerncraft.controlpanel.common.messages.MessageSessionAccepted;
 import com.stjerncraft.controlpanel.common.messages.MessageStartSession;
+import com.stjerncraft.controlpanel.common.messages.MessageSubscriptionEvent;
 import com.stjerncraft.controlpanel.common.messages.MessageVersion;
 import com.stjerncraft.controlpanel.common.messages.Messages;
 import com.stjerncraft.controlpanel.core.Core;
@@ -51,6 +58,7 @@ public class ClientManager {
 		messages.setHandler(MessageVersion.class, (msg, s) -> checkVersion(msg, s));
 		messages.setHandler(MessageStartSession.class, (msg, s) -> startSession(msg, s));
 		messages.setHandler(MessageCallMethod.class, (msg, s) -> callMethod(msg, s));
+		messages.setHandler(MessageCallSubscribe.class, (msg, s) -> callSubscribe(msg, s));
 	}
 	
 	/**
@@ -207,7 +215,7 @@ public class ClientManager {
 		if(session.getRemoteClient() != client)
 		{
 			//Trying to use a session which doesn't belong to the client.
-			//We see that as a possible invalid state, and disconnect the client.
+			//We see that as a possible invalid state/bad intent, and disconnect the client.
 			client.disconnect("callMethod on invalid session");
 			return;
 		}
@@ -217,8 +225,61 @@ public class ClientManager {
 				return;
 			
 			//Pass on the return value to the client
-			client.sendMessage(returnJson);
+			MessageCallMethodReply replyMsg = new MessageCallMethodReply(msg.sessionId, msg.callId, returnJson);
+			sendMessage(client, replyMsg);
 		});
+	}
+	
+	/**
+	 * Call a method 
+	 * @param msg
+	 * @param client
+	 */
+	private void callSubscribe(MessageCallSubscribe msg, IRemoteClient client) {
+		ISession session = core.getSession(msg.sessionId);
+		if(session == null)
+		{
+			//The session might have been ended before we received this message, ignore it for now.
+			logger.warn("Trying to subscribe on unknown/ended session");
+			//TODO: We might need to be more strict here, and have a session history we can check against?
+			return;
+		}
+		
+		if(session.getRemoteClient() != client)
+		{
+			//Trying to use a session which doesn't belong to the client.
+			//We see that as a possible invalid state/bad intent, and disconnect the client.
+			client.disconnect("callSubscribe on invalid session");
+			return;
+		}
+		
+		Consumer<Integer> subscribeCallback = subscriptionId -> {
+			if(!client.isConnected())
+				return;
+			
+			int subId = subscriptionId == null ? 0 : subscriptionId;
+			
+			MessageCallSubscribeReply replyMsg = new MessageCallSubscribeReply(msg.sessionId, msg.callId, subscriptionId != null, subId);
+			sendMessage(client, replyMsg);
+		};
+		
+		Consumer<Integer> unsubscribeCallback = subscriptionId -> {
+			if(!client.isConnected())
+				return;
+			
+			MessageEndSubscription unsubMsg = new MessageEndSubscription(msg.sessionId, subscriptionId);
+			sendMessage(client, unsubMsg);
+		};
+		
+		BiConsumer<Integer, String> eventCallback = (subscriptionId, eventJson) -> {
+			if(!client.isConnected())
+				return;
+			
+			MessageSubscriptionEvent eventMsg = new MessageSubscriptionEvent(msg.sessionId, subscriptionId, eventJson);
+			sendMessage(client, eventMsg);
+		};
+		
+		session.callSubscribe(msg.methodJson, subscribeCallback, eventCallback, unsubscribeCallback);
 	}
 	
 	/**

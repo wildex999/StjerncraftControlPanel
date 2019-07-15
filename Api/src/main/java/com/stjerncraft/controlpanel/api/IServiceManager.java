@@ -24,12 +24,6 @@ public interface IServiceManager {
 	public IEventSubscription getEventSubscription();
 	
 	/**
-	 * Get the event action for the current event subscription.
-	 * This will only return a non-null value when called inside a method tagged with EventHandler.
-	 */
-	public EventAction getEventAction();
-	
-	/**
 	 * Get the Service Provider for the given Service API, which is registered locally.
 	 * @param apiInterfaceClass The Service API for which you want the Service Provider 
 	 * @return A Service Provider implementing the given Service API, or null if none is registered.

@@ -13,8 +13,10 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
+import com.stjerncraft.controlpanel.api.IEventSubscription;
 import com.stjerncraft.controlpanel.api.IServiceApiGenerated;
 import com.stjerncraft.controlpanel.api.IServiceProvider;
+import com.stjerncraft.controlpanel.api.IUnsubscribeHandler;
 import com.stjerncraft.controlpanel.api.Version;
 import com.stjerncraft.controlpanel.api.exceptions.CallMethodException;
 
@@ -75,10 +77,11 @@ class ServiceApiClassGenerator {
 		MethodSpec callDirectMethod = generateCallMethod(api, "callMethod", false);
 		MethodSpec callEventHandler = MethodSpec.methodBuilder("callEventHandler")
 			.addModifiers(Modifier.PUBLIC)
-			.returns(boolean.class)
+			.returns(IUnsubscribeHandler.class)
 			.addParameter(IServiceProvider.class, "serviceProvider")
 			.addParameter(String.class, "method")
-			.addStatement("return callEventHandler(($L)serviceProvider, method)", api.name.replaceAll("\\$", "."))
+			.addParameter(IEventSubscription.class, "subscription")
+			.addStatement("return callEventHandler(($L)serviceProvider, method, subscription)", api.name.replaceAll("\\$", "."))
 			.build();
 		//EventHandler is handled like normal Methods for now
 		MethodSpec callDirectEventHandler = generateCallMethod(api, "callEventHandler", true);
@@ -113,13 +116,18 @@ class ServiceApiClassGenerator {
 	 * [7, 5, 3] -> [[7, 5, 3]]
 	 * "Str" -> ["Str"]
 	 * Inst -> [{"field1", "field2", [], 1}]
+	 * 
+	 * Note: For Event Subscriptions the return value is a IUnsubscribeHandler which is only handled by the Agent, and not transmitted back to the Client.
 	 */
 	protected MethodSpec generateCallMethod(ServiceApiInfo api, String methodName, boolean eventHandler) {
 		MethodSpec.Builder method = MethodSpec.methodBuilder(methodName)
 			.addModifiers(Modifier.PUBLIC)
-			.returns(eventHandler ? boolean.class : String.class)
+			.returns(eventHandler ? IUnsubscribeHandler.class : String.class)
 			.addParameter(ClassName.bestGuess(api.name.replaceAll("\\$", ".")), "serviceProvider")
 			.addParameter(String.class, "method");
+		
+		if(eventHandler)
+			method.addParameter(IEventSubscription.class, "subscription");
 				
 				
 		//Deserialize JSON
@@ -161,10 +169,11 @@ class ServiceApiClassGenerator {
 			//Call method & serialize return value
 			String retVal = "ret_" + apiMethod.name; //Need unique name since we are inside a switch
 			String retValJson = retVal + "_json";
+			String retType = eventHandler ? IUnsubscribeHandler.class.getCanonicalName() : apiMethod.returnType.getCanonicalName();
 			if(apiMethod.isReturnArray) {
-				method.addStatement("$L[] $L = serviceProvider.$L($L)", apiMethod.returnType.getCanonicalName(), retVal, apiMethod.methodName, argsString);
+				method.addStatement("$L[] $L = serviceProvider.$L($L)", retType, retVal, apiMethod.methodName, argsString);
 			} else if(apiMethod.returnType != BaseType.Void.type) {
-				method.addStatement("$L $L = serviceProvider.$L($L)", apiMethod.returnType.getCanonicalName(), retVal, apiMethod.methodName, argsString);
+				method.addStatement("$L $L = serviceProvider.$L($L)", retType, retVal, apiMethod.methodName, argsString);
 			} else {
 				method.addStatement("serviceProvider.$L($L)", apiMethod.methodName, argsString);
 				method.addStatement("return null");
@@ -174,11 +183,21 @@ class ServiceApiClassGenerator {
 			if(!eventHandler) {
 				if(apiMethod.isReturnArray || apiMethod.returnType != BaseType.Void.type) {
 					method.addStatement("$T $L = new $T()", JSONArray.class, retValJson, JSONArray.class);
-					Serialize.serializeVariable(apiMethod.returnType, retVal, apiMethod.isReturnArray, method, dataObjects, retValJson);
+					CodeBlock.Builder serializeCode = CodeBlock.builder();
+					Serialize.serializeVariable(apiMethod.returnType, retVal, apiMethod.isReturnArray, serializeCode, dataObjects, retValJson);
+					method.addCode(serializeCode.build());
 					method.addStatement("return $L.toString()", retValJson);
 				}
 			} else {
-				//Event Handlers just pass on the returned boolean
+				//Setup serializer for the Event Data
+				String dataTypeCast = "(" + apiMethod.returnType.getCanonicalName() + (apiMethod.isReturnArray() ? "[]" : "") + ")";
+				CodeBlock.Builder serializeCode = CodeBlock.builder();
+				serializeCode.addStatement("$T $L = new $T()", JSONArray.class, retValJson, JSONArray.class);
+				Serialize.serializeVariable(apiMethod.returnType, dataTypeCast + "data", apiMethod.isReturnArray, serializeCode, dataObjects, retValJson);
+				serializeCode.addStatement("return $L.toString()", retValJson);
+				method.addStatement("subscription.setDataSerializer(data -> {$L})", serializeCode.build().toString());
+				
+				//Event Handlers return no JSON, but instead returns a IUnsubscribeHandler for the Agent to call when the Client unsubscribes
 				method.addStatement("return $L", retVal);
 			}
 			method.endControlFlow();

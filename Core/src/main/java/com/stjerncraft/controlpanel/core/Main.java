@@ -48,7 +48,7 @@ public class Main {
 		ModuleManager moduleManagerService = setupModuleManager();
 		if(moduleManagerService == null)
 			return;
-		localAgent.addServiceProvider(moduleManagerService, null);
+		localAgent.addServiceProvider(moduleManagerService, Statics.CORE_TEST_UUID);
 
 		//Setup Remote Agents
 		logger.info("Setting up Remote Agents");

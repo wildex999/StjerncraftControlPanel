@@ -120,8 +120,11 @@ class DataObjectClassGenerator {
 		method.addStatement("if(obj == null) return json");
 		
 		//Serialize
-		for(Field field : dataObject.fields)
-			Serialize.serializeVariable(field.fieldType, "obj." + field.name, field.isArray, method, dataObjects, "json");
+		for(Field field : dataObject.fields) {
+			CodeBlock.Builder serializeCode = CodeBlock.builder();
+			Serialize.serializeVariable(field.fieldType, "obj." + field.name, field.isArray, serializeCode, dataObjects, "json");
+			method.addCode(serializeCode.build());
+		}
 		
 		method.addStatement("return json");
 		return method.build();

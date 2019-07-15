@@ -33,4 +33,22 @@ public class ServiceApiInfo {
 	public static String getId(String name, int version) {
 		return name + "V" + version;
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj == this)
+			return true;
+		
+		if(!(obj instanceof ServiceApiInfo))
+			return false;
+		
+		ServiceApiInfo other = (ServiceApiInfo)obj;
+		if(!other.name.equals(name))
+			return false;
+		
+		if(other.version != version)
+			return false;
+		
+		return true;
+	}
 }

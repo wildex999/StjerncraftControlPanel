@@ -16,11 +16,10 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.MirroredTypeException;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.tools.Diagnostic.Kind;
 
 import com.stjerncraft.controlpanel.api.IServiceProvider;
+import com.stjerncraft.controlpanel.api.IUnsubscribeHandler;
 import com.stjerncraft.controlpanel.api.annotation.EventHandler;
 import com.stjerncraft.controlpanel.api.annotation.ServiceApi;
 
@@ -94,17 +93,19 @@ class ServiceApiProcessor {
 			return null;
 		
 		ExecutableElement method = (ExecutableElement)element;
+		EventHandler eventHandler = element.getAnnotation(EventHandler.class);
 		
 		//TODO: Compress the name somehow? Sort the methods by their signature name so we can append a number instead?)
 		Method newMethod = new Method(getMethodSignature(method), method.getSimpleName().toString());
-		//procEnv.getMessager().printMessage(Kind.WARNING, "TEST: " + newMethod);
+		
+		newMethod.comments = procEnv.getElementUtils().getDocComment(method);
 		
 		//Return type
 		TypeMirror returnType = method.getReturnType();
 		FieldType returnFieldType = FieldCheck.getActualFieldType(returnType, dataObjectProc.getParsedDataObjects());
-		if(!FieldCheck.isValidType(dataObjectProc.getParsedDataObjects(), returnType) || returnFieldType == null)
+		if((!FieldCheck.isValidType(dataObjectProc.getParsedDataObjects(), returnType) && eventHandler == null) || returnFieldType == null)
 			throw new IllegalArgumentException("[" + api.getName() + "] Method return type " + returnType + " is invalid for " + newMethod.name + " from " + element.getEnclosingElement());
-
+			
 		newMethod.setReturnType(returnFieldType, FieldCheck.isArray(returnType));
 		
 		//Parameters
@@ -120,7 +121,6 @@ class ServiceApiProcessor {
 		}
 		
 		//Special handling for Event Handler Methods
-		EventHandler eventHandler = element.getAnnotation(EventHandler.class);
 		if(eventHandler != null)
 		{
 			newMethod.isEventHandler = true;
@@ -133,15 +133,17 @@ class ServiceApiProcessor {
 				if(type == null)
 					throw new IllegalArgumentException("[" + api.getName() + "] Unknown Data Type " + e.getTypeMirror() + " for Event Handler " + newMethod.name + " from " + element.getEnclosingElement());
 				
-				newMethod.eventDataType = type;
+				newMethod.returnType = type;
+				newMethod.isReturnArray = FieldCheck.isArray(e.getTypeMirror());
 			}
 			
-			if(newMethod.eventDataType == null)
+			if(newMethod.returnType == null)
 				throw new IllegalArgumentException("[" + api.getName() + "] Missing Data Type for Event Handler " + newMethod.name + " from " + element.getEnclosingElement());
 			
-			//Must return a boolean to indicate success/failure
-			if(returnType.getKind() != TypeKind.BOOLEAN)
-				throw new IllegalArgumentException("[" + api.getName() + "] Return type must be boolean for Event Handler " + newMethod.name + " from " + element.getEnclosingElement());
+			//Must have a IUnsubscribeHandler return type
+			TypeElement expectedType = procEnv.getElementUtils().getTypeElement(IUnsubscribeHandler.class.getCanonicalName());
+			if(!returnType.equals(expectedType.asType()))
+				throw new IllegalArgumentException("[" + api.getName() + "] Return type " + returnType + " must be " + expectedType + " for Event Handler " + newMethod.name + " from " + element.getEnclosingElement());
 		}
 		
 		return newMethod;

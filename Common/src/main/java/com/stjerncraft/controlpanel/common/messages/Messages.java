@@ -31,6 +31,12 @@ public class Messages<C> {
 		register(MessageSessionAccepted.class);
 		register(MessageSessionState.class);
 		register(MessageEndSession.class);
+		register(MessageCallMethod.class);
+		register(MessageCallMethodReply.class);
+		register(MessageCallSubscribe.class);
+		register(MessageCallSubscribeReply.class);
+		register(MessageSubscriptionEvent.class);
+		register(MessageEndSubscription.class);
 	}
 	
 	/**

@@ -16,4 +16,12 @@ public class ModuleEvent {
 	}
 
 	public Action action;
+	public ModuleInfo module; //TODO: Allow Array for batching large changes?
+	
+	public ModuleEvent() {}
+	
+	public ModuleEvent(Action action, ModuleInfo module) {
+		this.action = action;
+		this.module = module;
+	}
 }

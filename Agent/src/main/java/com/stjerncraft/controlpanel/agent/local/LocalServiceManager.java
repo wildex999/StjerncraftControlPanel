@@ -2,7 +2,6 @@ package com.stjerncraft.controlpanel.agent.local;
 
 import java.util.List;
 
-import com.stjerncraft.controlpanel.api.EventAction;
 import com.stjerncraft.controlpanel.api.IClient;
 import com.stjerncraft.controlpanel.api.IEventSubscription;
 import com.stjerncraft.controlpanel.api.IServiceManager;
@@ -14,7 +13,6 @@ import com.stjerncraft.controlpanel.api.IServiceProvider;
 
 public class LocalServiceManager implements IServiceManager {
 	LocalAgent agent;
-	EventAction eventAction;
 	IEventSubscription eventSubscription;
 	IClient client;
 	
@@ -35,8 +33,7 @@ public class LocalServiceManager implements IServiceManager {
 	 * @param action
 	 * @param subscription
 	 */
-	public void setEventContext(EventAction action, IEventSubscription subscription) {
-		this.eventAction = action;
+	public void setEventContext(IEventSubscription subscription) {
 		this.eventSubscription = subscription;
 	}
 	
@@ -48,11 +45,6 @@ public class LocalServiceManager implements IServiceManager {
 	@Override
 	public IEventSubscription getEventSubscription() {
 		return eventSubscription;
-	}
-
-	@Override
-	public EventAction getEventAction() {
-		return eventAction;
 	}
 
 	@Override

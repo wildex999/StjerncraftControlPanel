@@ -1,5 +1,6 @@
 package com.stjerncraft.controlpanel.common.api;
 
+import com.stjerncraft.controlpanel.api.IUnsubscribeHandler;
 import com.stjerncraft.controlpanel.api.annotation.EventHandler;
 import com.stjerncraft.controlpanel.api.annotation.ServiceApi;
 import com.stjerncraft.controlpanel.common.ModuleEvent;
@@ -48,5 +49,5 @@ public interface ModuleManagerApi {
 	 * Note: Event will only ever include modules which a given user has permissions to see.
 	 */
 	@EventHandler(eventData=ModuleEvent.class)
-	public boolean listenForModuleEvents();
+	public IUnsubscribeHandler listenForModuleEvents();
 }

@@ -5,8 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.stjerncraft.controlpanel.api.IEventSubscription;
 import com.stjerncraft.controlpanel.api.IServiceManager;
 import com.stjerncraft.controlpanel.api.IServiceProvider;
+import com.stjerncraft.controlpanel.api.IUnsubscribeHandler;
+import com.stjerncraft.controlpanel.common.ModuleEvent;
+import com.stjerncraft.controlpanel.common.ModuleEvent.Action;
 import com.stjerncraft.controlpanel.common.ModuleInfo;
 import com.stjerncraft.controlpanel.common.api.ModuleManagerApi;
 
@@ -16,11 +20,14 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 	private Map<String, Module> modules;
 	private Map<String, Module> activeModules;
 	
+	private Map<Integer, IEventSubscription> subscriptions;
+	
 	IServiceManager serviceManager;
 	
 	public ModuleManager() {
 		modules = new HashMap<>();
 		activeModules = new HashMap<>();
+		subscriptions = new HashMap<>();
 	}
 	
 	/**
@@ -76,6 +83,9 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 		
 		activeModules.put(id, storedModule);
 		
+		ModuleEvent event = new ModuleEvent(Action.Activated, module);
+		broadcastEvent(event);
+		
 		return true;
 	}
 
@@ -110,9 +120,23 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 	}
 
 	@Override
-	public boolean listenForModuleEvents() {
-		// TODO Auto-generated method stub
-		return false;
+	public IUnsubscribeHandler listenForModuleEvents() {
+		IEventSubscription newSubscription = serviceManager.getEventSubscription();
+		subscriptions.put(newSubscription.getSubscriptionId(), newSubscription);
+		
+		return subscription -> {
+			subscriptions.remove(subscription.getSubscriptionId());
+		};
+	}
+	
+	/**
+	 * Broadcast an event to all current subscriptions
+	 * @param event
+	 */
+	private void broadcastEvent(ModuleEvent event) {
+		for(IEventSubscription subscription : subscriptions.values()) {
+			subscription.sendEvent(event);
+		}
 	}
 
 }

@@ -57,4 +57,9 @@ public class ServiceProvider<T extends ServiceApi> {
 		ServiceProviderInfo info = new ServiceProviderInfo(getUuid(), agent.getUuid(), apis);
 		return info;
 	}
+	
+	@Override
+	public String toString() {
+		return uuid;
+	}
 }

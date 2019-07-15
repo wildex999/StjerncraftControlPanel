@@ -4,7 +4,7 @@ import java.util.function.Function;
 
 import org.json.JSONArray;
 
-import com.squareup.javapoet.MethodSpec.Builder;
+import com.squareup.javapoet.CodeBlock.Builder;
 
 public class Serialize {
 	

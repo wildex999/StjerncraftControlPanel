@@ -18,11 +18,11 @@ public interface IServiceApiGenerated {
 	public String callMethod(IServiceProvider serviceProvider, String methodJson);
 	
 	/**
-	 * Call the given event handler for Subscribing or Unsubscribing to an event.
+	 * Call the given event handler for Subscribing to an event.
 	 * The context stored on the ServiceManager defines whether it's a subscribe or unsubscribe call.
 	 * @param serviceProvider Service Provider to call the event handler on.
 	 * @param eventMethodJson Method name and parameters serialized as JSON.
-	 * @return True if subscribe/unsubscribe succeeded, false if not. Unsubscribe can only fail if there was no subscription to begin with.
+	 * @return An IUnsibscibeHandler, or null if the subscription was rejected.
 	 */
-	public boolean callEventHandler(IServiceProvider serviceProvider, String eventMethodJson);
+	public IUnsubscribeHandler callEventHandler(IServiceProvider serviceProvider, String eventMethodJson, IEventSubscription subscription);
 }

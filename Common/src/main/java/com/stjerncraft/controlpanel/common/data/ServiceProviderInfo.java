@@ -1,5 +1,7 @@
 package com.stjerncraft.controlpanel.common.data;
 
+import java.util.Arrays;
+
 import com.stjerncraft.controlpanel.api.annotation.DataObject;
 
 @DataObject
@@ -15,4 +17,26 @@ public class ServiceProviderInfo {
 	}
 	
 	public ServiceProviderInfo() {}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(this == obj)
+			return true;
+		
+		if(!(obj instanceof ServiceProviderInfo))
+			return false;
+		
+		ServiceProviderInfo other = (ServiceProviderInfo)obj;
+		
+		if(!other.uuid.equals(uuid))
+			return false;
+		
+		if(!other.agentUuid.equals(agentUuid))
+			return false;
+		
+		if(!Arrays.equals(other.apis, apis))
+			return false;
+		
+		return true;
+	}
 }

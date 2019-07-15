@@ -20,7 +20,7 @@ public class WebSocketClient implements IRemoteClient {
 	Session socketSession;
 	String uuid;
 	LocalDateTime connectionDateTime;
-	String agent;
+	String name = "WebsocketClient"; //TODO: Allow Client to set own name
 	
 	volatile boolean isConnected; //Set to false when disconnecting from our end(Don't handle data while waiting for clean disconnect)
 	
@@ -91,12 +91,17 @@ public class WebSocketClient implements IRemoteClient {
 	}
 
 	@Override
-	public String getAgent() {
-		return agent;
+	public String getName() {
+		return name;
 	}
 
 	@Override
 	public boolean isConnected() {
 		return isConnected;
+	}
+	
+	@Override
+	public String toString() {
+		return uuid;
 	}
 }

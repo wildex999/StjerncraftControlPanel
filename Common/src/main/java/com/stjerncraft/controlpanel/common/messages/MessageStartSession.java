@@ -1,7 +1,5 @@
 package com.stjerncraft.controlpanel.common.messages;
 
-import com.stjerncraft.controlpanel.api.IServiceProvider;
-
 /**
  * Sent to the Core to initialize a session with a Service Provider.
  * The Core will assign a unique session ID, and forward the request to the Agent.
@@ -22,9 +20,9 @@ public class MessageStartSession extends Message {
 	
 	public MessageStartSession() {}
 	
-	public MessageStartSession(int requestId, Class<IServiceProvider> api, String serviceProviderId) {
+	public MessageStartSession(int requestId, String apiId, String serviceProviderId) {
 		this.requestId = requestId;
-		this.apiId = "";
+		this.apiId = apiId;
 		this.serviceProviderId = serviceProviderId;
 	}
 

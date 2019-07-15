@@ -1,5 +1,6 @@
 package com.stjerncraft.controlpanel.agent;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.stjerncraft.controlpanel.api.IEventSubscription;
@@ -38,15 +39,18 @@ public interface ISession {
 	/**
 	 * Subscribe to an Event.
 	 * @param methodJson Call to method marked as EventHandler.
-	 * @return The event subscription if subscription was accepted, null if not.
+	 * @param subscribeCallback Client Callback which is called with the Subscribe response.
+	 * @param eventCallback Client Callback called whenever there is a new Event to send to the client, with the subscriptionId & serialized JSON value.
+	 * @param unsubscribeCallback Client Callback which is called when ending the Subscription
+	 *     Provides the event subscriptionId if subscription was accepted, null if not.
 	 */
-	public IEventSubscription eventSubscribe(String methodJson);
+	public void callSubscribe(String methodJson, Consumer<Integer> subscribeCallback, BiConsumer<Integer, String> eventCallback, Consumer<Integer> unsubscribeCallback);
 	
 	/**
 	 * End an existing subscription to an Event.
 	 * @param subscription The subscription to end.
 	 */
-	public void eventUnsubscribe(IEventSubscription subscription);
+	public void callUnsubscribe(IEventSubscription subscription);
 	
 	/**
 	 * Called by the Agent when the session has started.
