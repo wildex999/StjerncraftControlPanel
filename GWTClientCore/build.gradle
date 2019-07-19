@@ -1,0 +1,55 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.wisepersist:gwt-gradle-plugin:1.0.6'
+    }
+}
+
+apply plugin: 'war'
+apply plugin: 'gwt'
+apply plugin: 'eclipse'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	compile project(':Common')
+	compile project(':Api')
+	compile project(':GWTClientApi')
+}
+
+clean.doFirst {
+	delete "gwt-unitCache/"
+}
+
+compileGwt {
+	war = new File(project(':GWTClientCore').projectDir, "war")
+}
+
+sourceSets {
+	main {
+		java {}
+	}
+}
+
+gwt {
+    gwtVersion='2.8.2'
+	minHeapSize = "512M"
+	maxHeapSize = "1024M"
+	
+	jsInteropExports {
+		shouldGenerate = true
+	}
+	
+	compiler {
+		style = 'PRETTY'
+	}
+	
+    modules 'com.stjerncraft.controlpanel.client.GWTClientCore'
+	def aptFiles = new File(project(':Common').projectDir, "/build/generated/source/apt/main")
+	
+	src += files(project(':Common').sourceSets.main.allJava.srcDirs) + files(aptFiles) + files(project(':Api').sourceSets.main.allJava.srcDirs) + files(project(':GWTClientApi').sourceSets.main.allJava.srcDirs)
+}

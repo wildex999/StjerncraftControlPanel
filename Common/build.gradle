@@ -8,6 +8,7 @@ jar {
 }
 
 dependencies {
+	compile group: 'com.google.jsinterop', name: 'jsinterop-annotations', version: '1.0.2'
 	compile project(":Api")
 	annotationProcessor project(":Api")
 }

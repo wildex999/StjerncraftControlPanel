@@ -2,26 +2,42 @@ package com.stjerncraft.controlpanel.common.data;
 
 import com.stjerncraft.controlpanel.api.annotation.DataObject;
 
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsType;
+
+
 /**
  * Information about a defined Service API, which is implemented by Service Providers.
  * An unique Service API is identified by its full name and version.
  */
+
+@JsType
 @DataObject
-public class ServiceApiInfo {
-	public String name;
-	public int version;
+public class ServiceApiInfo implements IServiceApiInfo {
+	private String name;
+	private int version;
 	
-	public ServiceApiInfo() {}
+	@JsIgnore
+	public ServiceApiInfo() {
+		this("", 0);
+	}
 	
 	public ServiceApiInfo(String name, int version) {
 		this.name = name;
 		this.version = version;
 	}
 	
-	/**
-	 * Get the ID uniquely identifying this API(Name + Version)
-	 * @return
-	 */
+	@Override
+	public String getName() {
+		return name;
+	}
+	
+	@Override
+	public int getVersion() {
+		return version;
+	}
+	
+	@Override
 	public String getId() {
 		return getId(name, version);
 	}
@@ -39,16 +55,18 @@ public class ServiceApiInfo {
 		if(obj == this)
 			return true;
 		
-		if(!(obj instanceof ServiceApiInfo))
+		//JsInterop can't do instanceof check
+		try {
+			IServiceApiInfo other = (IServiceApiInfo)obj;
+			if(!other.getName().equals(name))
+				return false;
+			if(other.getVersion() != version)
+				return false;
+		} catch(Exception e) {
 			return false;
+		}
 		
-		ServiceApiInfo other = (ServiceApiInfo)obj;
-		if(!other.name.equals(name))
-			return false;
-		
-		if(other.version != version)
-			return false;
-		
+
 		return true;
 	}
 }

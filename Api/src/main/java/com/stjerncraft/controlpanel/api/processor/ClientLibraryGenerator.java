@@ -2,7 +2,6 @@ package com.stjerncraft.controlpanel.api.processor;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.function.Consumer;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Modifier;
@@ -18,6 +17,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
+import com.stjerncraft.controlpanel.api.client.ICallMethodReturnHandler;
 import com.stjerncraft.controlpanel.api.client.IClientCore;
 import com.stjerncraft.controlpanel.api.client.IClientSubscriptionHandler;
 
@@ -137,7 +137,8 @@ DataObjectProcessor dataObjects;
 			TypeName returnType = ClassName.bestGuess(method.returnType.getCanonicalName());
 			if(method.isReturnArray())
 				returnType = ArrayTypeName.of(returnType);
-			methodBuilder.addParameter(ParameterizedTypeName.get(ClassName.get(Consumer.class), returnType), "callback");
+			ParameterizedTypeName callbackHandlerType = ParameterizedTypeName.get(ClassName.get(ICallMethodReturnHandler.class), returnType);
+			methodBuilder.addParameter(callbackHandlerType, "callback");
 			
 			//Create Callback proxy, deserializing the result
 			callbackVar = "callbackProxy";
@@ -146,9 +147,10 @@ DataObjectProcessor dataObjects;
 			callbackBuilder.addStatement("$T returnJSON = new $T(value)", JSONArray.class, JSONArray.class);
 			Field returnField = new Field("", method.isReturnArray(), method.getReturnType());
 			Parse.parseVariable(returnField, "returnJSON", 0, callbackBuilder, dataObjects, "returnValue");
-			callbackBuilder.addStatement("callback.accept(returnValue)");
+			callbackBuilder.addStatement("callback.onReturnValue(returnValue)");
 			
-			methodBuilder.addStatement("Consumer<String> $L = (String value) -> { $L }", callbackVar, callbackBuilder.build().toString());
+			ParameterizedTypeName callbackHandlerProxyType = ParameterizedTypeName.get(ICallMethodReturnHandler.class, String.class);
+			methodBuilder.addStatement("$T $L = (String value) -> { $L }", callbackHandlerProxyType, callbackVar, callbackBuilder.build().toString());
 			
 		} else
 			callbackVar = "null";

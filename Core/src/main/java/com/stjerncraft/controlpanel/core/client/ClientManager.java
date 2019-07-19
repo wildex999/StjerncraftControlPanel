@@ -103,7 +103,8 @@ public class ClientManager {
 			//Handle the message on the main thread
 			messageQueue.add(new MessageAction(client, msg));
 		} catch(Exception e) {
-			String err = "Exception while parsing message: " + ExceptionString.PrintException(e);
+			String err = "Exception while parsing message. Exception: " + ExceptionString.PrintException(e);
+			err += "\n\n" + message;
 			logger.warn(err);
 			client.disconnect(err);
 		}

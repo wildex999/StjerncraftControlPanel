@@ -4,21 +4,14 @@ import java.util.Objects;
 
 import com.stjerncraft.controlpanel.common.data.ServiceApiInfo;
 
-
 public class ServiceApi extends ServiceApiInfo {
 
-	public ServiceApi() {}
+	public ServiceApi() {
+		this("", 0);
+	}
 	
 	public ServiceApi(String name, int version) {
 		super(name, version);
-	}
-	
-	public String getName() {
-		return name;
-	}
-	
-	public int getVersion() {
-		return version;
 	}
 	
 	@Override
@@ -28,10 +21,10 @@ public class ServiceApi extends ServiceApiInfo {
 		
 		ServiceApi other = (ServiceApi)obj;
 		
-		if(!Objects.equals(name, other.name))
+		if(!Objects.equals(getName(), other.getName()))
 			return false;
 		
-		if(version != other.version)
+		if(getVersion() != other.getVersion())
 			return false;
 		
 		return true;
@@ -39,6 +32,6 @@ public class ServiceApi extends ServiceApiInfo {
 	
 	@Override
 	public String toString() {
-		return "Name: " + name + ". Version: " + version;
+		return "Name: " + getName() + ". Version: " + getVersion();
 	}
 }

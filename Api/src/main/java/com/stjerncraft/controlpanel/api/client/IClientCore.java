@@ -1,6 +1,6 @@
 package com.stjerncraft.controlpanel.api.client;
 
-import java.util.function.Consumer;
+import jsinterop.annotations.JsType;
 
 /**
  * ClientCore takes care of sending method calls, and receiving responses, and handles Subscription Events.
@@ -10,6 +10,7 @@ import java.util.function.Consumer;
  * 
  * The Client Library acts as a API Proxy for calls to the Client Core.
  */
+@JsType(isNative=true)
 public interface IClientCore {
 	/**
 	 * Send a Method Call JSON to the Service Provider.
@@ -17,7 +18,7 @@ public interface IClientCore {
 	 * @param jsonMethod A Serialized JSON object with the method call.
 	 * @param returnCallback The callback which will be called with the return value. Must be null for void callback methods.
 	 */
-	int callMethod(int sessionId, String jsonMethod, Consumer<String> returnCallback);
+	int callMethod(int sessionId, String jsonMethod, ICallMethodReturnHandler<String> returnCallback);
 	
 	/**
 	 * Subscribe to an Event on the Service Provider.

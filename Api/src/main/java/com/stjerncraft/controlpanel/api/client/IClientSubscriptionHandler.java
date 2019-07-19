@@ -1,9 +1,12 @@
 package com.stjerncraft.controlpanel.api.client;
 
+import jsinterop.annotations.JsType;
+
 /**
  * A Client side handler for a given Subscription.
  * Handles the events for the Subscription from the Service Provider.
  */
+@JsType(isNative=true)
 public interface IClientSubscriptionHandler<T> {
 	
 	/**

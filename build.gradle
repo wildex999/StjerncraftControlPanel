@@ -1,5 +1,5 @@
 subprojects {
-	configure([project(":Api"), project(":Core"), project(":Common"), project(":GWTModuleCore"), project(":Agent")]) {
+	configure([project(":Api"), project(":Core"), project(":Common"), project(":GWTClientCore"), project(":GWTClientApi"), project(":GWTWebView"), project(":Agent")]) {
 		apply plugin: 'java'
 		apply plugin: 'eclipse'
 	}
@@ -15,10 +15,17 @@ subprojects {
 
 def targetDir = "target"
 
-task copyModuleCore(type: Copy) {
-	evaluationDependsOn(":GWTModuleCore")
-	dependsOn(":GWTModuleCore:compileGwt")
-	from project(":GWTModuleCore").file("war")
+task copyClientCore(type: Copy) {
+	evaluationDependsOn(":GWTClientCore")
+	dependsOn(":GWTClientCore:compileGwt")
+	from project(":GWTClientCore").file("war")
+	into file("target/public")
+}
+
+task copyWebView(type: Copy) {
+	evaluationDependsOn(":GWTWebView")
+	dependsOn(":GWTWebView:compileGwt")
+	from project(":GWTWebView").file("war")
 	into file("target/public")
 }
 
@@ -33,7 +40,8 @@ task copyCore(type: Copy) {
 
 task copyBuild(type: Copy) {
 	dependsOn 'copyCore'
-	dependsOn 'copyModuleCore'
+	dependsOn 'copyClientCore'
+	dependsOn 'copyWebView'
 }
 
 task build() {
