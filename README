@@ -1,0 +1,27 @@
+-- StjernCraft Control Panel --
+
+- SETUP -
+1. Open Command Line
+2. Run gradlew/gradlew.bat to download gradle and dependencies
+3. Run "gradlew build" to build the whole project
+4. Run "gradlew eclipse" to create the Eclipse project
+5. Run "BuildAndRunServer" to build the project into "target" and run the server.
+
+- Eclipse -
+To open the project in eclipse:
+1. Open Eclipse and click File -> "Open Projects From File System..."
+2. Select the root Project directory as "Import Source"
+3. Select all the projects you want, which will open them in the Package Explore.
+4. Install the GWT plugin to work with the GWT projects.
+
+- GWT Development/Debugging -
+You can easily work on and debug a single GWT project.
+1. With the GWT Plugin installed in Eclipse, you can Right click a project and select "Run As -> GWT Development Mode with Jetty".
+2. If asked for a target folder, you can either point it at the local war folder to tets the GWT Project alone, or point it at the "target/public" folder to test it in the context of the whole server and other GWT modules.
+If run in the "target/public" folder it will intercept all load calls for the GWT Module's js files when it happens, and do live-compile with Source maps in Chrome.
+3. Open the URL it makes available in the "Development Mode" tab, usually something like "http://127.0.0.1:8888/index.html".
+Note: If you do not get an URL, make sure there is an index.html file in the choosen location.
+
+- Cleanup -
+It is recommended to a full clean & build sometimes. This can be done by running "gradlew clean" and "clear_gwt_temp.bat".
+If there has been a change to the API, Eclipse usually needs to be reloaded, and "Project -> Clean.." run to rebuild all generated files.
