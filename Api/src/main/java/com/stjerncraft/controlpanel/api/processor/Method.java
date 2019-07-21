@@ -7,7 +7,7 @@ import java.util.List;
  * A Method exists in a Service API, and describes the methods which can be called on it.
  */
 
-class Method {
+public class Method {
 	protected String name;
 	protected String methodName; //The actual name of the method which is called. Might differ from name when multiple methods of the same name exists
 	protected List<Field> parameters = new ArrayList<Field>(); //Use list to retain order
@@ -46,7 +46,19 @@ class Method {
 		isReturnArray = isArray;
 	}
 	
-	public String getName() {
+	/**
+	 * Get the name which includes arguments and types: MyMethod$par1
+	 * @return
+	 */
+	public String getFullName() {
+		return name;
+	}
+	
+	/**
+	 * Get the simple/readable method name: MyMethod
+	 * @return
+	 */
+	public String getMethodName() {
 		return methodName;
 	}
 	

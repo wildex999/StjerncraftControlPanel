@@ -23,9 +23,9 @@ import com.stjerncraft.controlpanel.api.IUnsubscribeHandler;
 import com.stjerncraft.controlpanel.api.annotation.EventHandler;
 import com.stjerncraft.controlpanel.api.annotation.ServiceApi;
 
-class ServiceApiProcessor {
+public class ServiceApiProcessor {
 	
-	Map<String, ServiceApiInfo> apis = new HashMap<>();
+	public Map<String, ServiceApiInfo> apis = new HashMap<>();
 	
 	public List<String> ignoreMethodsFrom = Arrays.asList(Object.class.getName(), IServiceProvider.class.getName()); 
 	

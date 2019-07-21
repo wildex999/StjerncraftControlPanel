@@ -1,6 +1,7 @@
 package com.stjerncraft.controlpanel.api.processor;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -8,7 +9,6 @@ import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
@@ -16,25 +16,35 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic.Kind;
 
+import com.stjerncraft.controlpanel.api.annotation.DataObject;
 import com.stjerncraft.controlpanel.api.annotation.DataObjectFactory;
+import com.stjerncraft.controlpanel.api.annotation.EventHandler;
+import com.stjerncraft.controlpanel.api.annotation.ServiceApi;
 
 /**
  * Detect Service API's, and generate supporting code.
  */
-
-@SupportedAnnotationTypes({Processor.serviceApi, Processor.dataObject, Processor.registerEvent})@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class Processor extends AbstractProcessor {
-	protected static final String serviceApi = "com.stjerncraft.controlpanel.api.annotation.ServiceApi";
-	protected static final String dataObject = "com.stjerncraft.controlpanel.api.annotation.DataObject";
-	protected static final String registerEvent = "com.stjerncraft.controlpanel.api.annotation.RegisterEvent";
 
 	protected DataObjectProcessor dataObjectProc;
 	protected ServiceApiProcessor serviceApiProc;
 	
+	protected String processorName = "Core";
+	
 	//Keep track of classes we have already generated
-	Set<Object> generated = new HashSet<>();
+	protected Set<Object> generated = new HashSet<>();
 	
 	public static Messager msg;
+	
+	@Override
+	public Set<String> getSupportedAnnotationTypes() {
+		return new HashSet<String>(Arrays.asList(
+			ServiceApi.class.getCanonicalName(),
+			DataObject.class.getCanonicalName(),
+			EventHandler.class.getCanonicalName()
+		));
+	}
 	
 	@Override
 	public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -47,25 +57,46 @@ public class Processor extends AbstractProcessor {
 	
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
-		//Parse DataObjects
+		msg.printMessage(Kind.NOTE, "Running " + processorName + " Processor...");
+		
+		if(!parseDataObjects(env))
+			return true;
+		
+		if(!parseApi(env))
+			return true;
+		
+		//Generate Source files
+		if(!generateDataObjects(env))
+			return true;
+		if(!generateApis(env))
+			return true;
+		
+		return true;
+	}
+	
+	protected boolean parseDataObjects(RoundEnvironment env) {
 		try {
 			dataObjectProc.parseDataObjects(env);
 		} catch(IllegalArgumentException e) {
 			msg.printMessage(Kind.ERROR, "Failed to parse DataObjects: " + e.getMessage(), null);
-			return true;
+			return false;
 		}
 		
-		//Parse API
+		return true;
+	}
+	
+	protected boolean parseApi(RoundEnvironment env) {
 		try {
 			serviceApiProc.parseServiceApis(env);
-			//Parse Events in API
 		} catch(IllegalArgumentException e) {
 			msg.printMessage(Kind.ERROR, "Failed to parse Service APIs: " + e.getMessage(), null);
-			return true;
+			return false;
 		}
-			
 		
-		//Generate Source files
+		return true;
+	}
+	
+	protected boolean generateDataObjects(RoundEnvironment env) {
 		//For DataObjects:
 		//- Generate class for parsing and serializing DataObjects
 		DataObjectClassGenerator dataObjectClassGenerator = new DataObjectClassGenerator(dataObjectProc);
@@ -94,9 +125,13 @@ public class Processor extends AbstractProcessor {
 			}
 		}
 		
+		return true;
+	}
+	
+	protected boolean generateApis(RoundEnvironment env) {
 		//For API:
 		//
-		//- Generate Java Client Library for Async Method calls towards the API.
+		//- Generate Java Client API for Async Method calls towards the API.
 		// This library is just a wrapper which will proxy the call to a Client/Module Core, and give the return value to a callback
 		//
 		//- TODO: Generate js/ts library for users not using Java
@@ -110,7 +145,7 @@ public class Processor extends AbstractProcessor {
 		// Note: Do we need this? ServiceManager will set User before remote calls. All local calls be considered User = System unless explicitly set?
 		
 		ServiceApiClassGenerator apiClassGenerator = new ServiceApiClassGenerator(dataObjectProc);
-		ClientLibraryGenerator clientLibraryGenerator = new ClientLibraryGenerator(dataObjectProc);
+		ClientApiLibraryGenerator clientLibraryGenerator = new ClientApiLibraryGenerator(dataObjectProc);
 		try {
 			for(ServiceApiInfo api : serviceApiProc.apis.values()) {
 				if(generated.contains(api))
@@ -133,5 +168,4 @@ public class Processor extends AbstractProcessor {
 		
 		return true;
 	}
-	
 }

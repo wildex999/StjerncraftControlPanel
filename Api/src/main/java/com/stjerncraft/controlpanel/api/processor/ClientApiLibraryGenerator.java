@@ -18,22 +18,24 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.stjerncraft.controlpanel.api.client.ICallMethodReturnHandler;
+import com.stjerncraft.controlpanel.api.client.IClientApiLibrary;
 import com.stjerncraft.controlpanel.api.client.IClientCore;
 import com.stjerncraft.controlpanel.api.client.IClientSubscriptionHandler;
+import com.stjerncraft.controlpanel.api.client.ISession;
 
 /**
- * Generates the API Client Library for use by GWT Clients.
+ * Generates the Client API Library for use by GWT Clients.
  * Provides Async Methods for the API calls, returning a Future instead of the return value.
  */
-public class ClientLibraryGenerator {
+public class ClientApiLibraryGenerator {
 DataObjectProcessor dataObjects;
 	
-	public ClientLibraryGenerator(DataObjectProcessor dataObjects) {
+	public ClientApiLibraryGenerator(DataObjectProcessor dataObjects) {
 		this.dataObjects = dataObjects;
 	}
 
 	/**
-	 * Generate a Client Library class for each Service API
+	 * Generate a Client API proxy class for each Service API
 	 * @param filer
 	 * @throws IOException
 	 */
@@ -45,21 +47,27 @@ DataObjectProcessor dataObjects;
 			packageName = className.substring(0, nameIndex);
 			className = className.substring(nameIndex+1);
 		}
+		className += ApiStrings.APICLIENTLIBRARYSUFFIX;
 		
-		TypeSpec.Builder builder = TypeSpec.classBuilder(className + ApiStrings.APICLIENTLIBRARYSUFFIX)
+		TypeSpec.Builder builder = TypeSpec.classBuilder(className)
+				.addSuperinterface(IClientApiLibrary.class)
 				.addField(IClientCore.class, "clientCore", Modifier.PRIVATE)
-				.addField(int.class, "sessionId", Modifier.PRIVATE)
+				.addField(ISession.class, "session", Modifier.PRIVATE)
 				.addModifiers(Modifier.PUBLIC)
 				.addMethod(generateConstructor());
 		
+		builder.addMethod(generateStaticGetApiName(api));
 		builder.addMethod(generateGetApiName(api));
+		builder.addMethod(generateStaticGetApiVersion(api));
 		builder.addMethod(generateGetApiVersion(api));
+		builder.addMethod(generateSetSession(api));
+		builder.addMethod(generateStaticGet(api, packageName, className));
 		
 		//Methods & Event Subscriptions
 		Collection<Method> methods = api.getMethods();
 		for(Method method : methods) {
 			MethodSpec generatedMethod;
-			if(method.isEventHandler)
+			if(method.isEventHandler())
 			{
 				generatedMethod = generateCallSubscribe(method);
 			} else {
@@ -79,18 +87,39 @@ DataObjectProcessor dataObjects;
 		return MethodSpec.constructorBuilder()
 			.addModifiers(Modifier.PUBLIC)
 			.addParameter(IClientCore.class, "clientCore")
-			.addParameter(int.class, "sessionId")
+			.addParameter(ISession.class, "session")
 			.beginControlFlow("if(clientCore == null)")
 			.addStatement("throw new $T($S)", RuntimeException.class, "Missing Client Core")
 			.endControlFlow()
 			.addStatement("this.clientCore = clientCore")
-			.addStatement("this.sessionId = sessionId")
+			.addStatement("this.session = session")
 			.build();
+	}
+	
+	private MethodSpec generateStaticGetApiName(ServiceApiInfo api) {
+		MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("getName")
+				.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+				.returns(String.class);
+		
+		methodBuilder.addStatement("return $S", api.getName());
+		
+		return methodBuilder.build();
+	}
+	
+	private MethodSpec generateStaticGetApiVersion(ServiceApiInfo api) {
+		MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("getVersion")
+				.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+				.returns(int.class);
+		
+		methodBuilder.addStatement("return $L", api.getVersion());
+		
+		return methodBuilder.build();
 	}
 	
 	private MethodSpec generateGetApiName(ServiceApiInfo api) {
 		MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("getApiName")
-				.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+				.addAnnotation(Override.class)
+				.addModifiers(Modifier.PUBLIC)
 				.returns(String.class);
 		
 		methodBuilder.addStatement("return $S", api.getName());
@@ -100,10 +129,34 @@ DataObjectProcessor dataObjects;
 	
 	private MethodSpec generateGetApiVersion(ServiceApiInfo api) {
 		MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("getApiVersion")
-				.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+				.addAnnotation(Override.class)
+				.addModifiers(Modifier.PUBLIC)
 				.returns(int.class);
 		
 		methodBuilder.addStatement("return $L", api.getVersion());
+		
+		return methodBuilder.build();
+	}
+	
+	private MethodSpec generateSetSession(ServiceApiInfo api) {
+		MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("setSession")
+				.addAnnotation(Override.class)
+				.addModifiers(Modifier.PUBLIC)
+				.addParameter(ISession.class, "session")
+				.returns(void.class);
+		
+		methodBuilder.addStatement("this.session = session");
+		
+		return methodBuilder.build();
+	}
+	
+	private MethodSpec generateStaticGet(ServiceApiInfo api, String packageName, String className) {
+		MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("get")
+				.addParameter(IClientCore.class, "clientCore")
+				.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+				.returns(ClassName.get(packageName, className));
+		
+		methodBuilder.addStatement("return new $T(clientCore, null)", ClassName.get(packageName, className));
 		
 		return methodBuilder.build();
 	}
@@ -113,9 +166,9 @@ DataObjectProcessor dataObjects;
 	 * @return
 	 */
 	private MethodSpec generateCallMethod(Method method) {
-		MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(method.getName())
+		MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(method.getMethodName())
 				.addModifiers(Modifier.PUBLIC)
-				.returns(void.class);
+				.returns(boolean.class);
 		
 		String comments = method.getComments();
 		if(comments != null)
@@ -134,7 +187,7 @@ DataObjectProcessor dataObjects;
 		String callbackVar;
 		if(method.getReturnType() != BaseType.Void.type)
 		{
-			TypeName returnType = ClassName.bestGuess(method.returnType.getCanonicalName());
+			TypeName returnType = ClassName.bestGuess(method.getReturnType().getCanonicalName());
 			if(method.isReturnArray())
 				returnType = ArrayTypeName.of(returnType);
 			ParameterizedTypeName callbackHandlerType = ParameterizedTypeName.get(ClassName.get(ICallMethodReturnHandler.class), returnType);
@@ -155,6 +208,11 @@ DataObjectProcessor dataObjects;
 		} else
 			callbackVar = "null";
 		
+		//Check if session is in correct state
+		methodBuilder.beginControlFlow("if(session == null || !session.isValid())");
+		methodBuilder.addStatement("return false");
+		methodBuilder.endControlFlow();
+		
 		//Serialize parameters into JSON method object
 		String parArray = "methodParameters";
 		methodBuilder.addStatement("$T $L = new $T()", JSONArray.class, parArray, JSONArray.class);
@@ -166,10 +224,11 @@ DataObjectProcessor dataObjects;
 		}
 		String methodObj = "methodObject";
 		methodBuilder.addStatement("$T $L = new $T()", JSONObject.class, methodObj, JSONObject.class);
-		methodBuilder.addStatement("$L.put($S, $L)", methodObj, method.name, parArray);
+		methodBuilder.addStatement("$L.put($S, $L)", methodObj, method.getFullName(), parArray);
 		
 		//Send to Core
-		methodBuilder.addStatement("clientCore.callMethod(sessionId, $L.toString(), $L)", methodObj, callbackVar);
+		methodBuilder.addStatement("clientCore.callMethod(session.getSessionId(), $L.toString(), $L)", methodObj, callbackVar);
+		methodBuilder.addStatement("return true");
 
 		return methodBuilder.build();
 	}
@@ -179,9 +238,9 @@ DataObjectProcessor dataObjects;
 	 * @return
 	 */
 	private MethodSpec generateCallSubscribe(Method method) {
-		MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(method.getName())
+		MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(method.getMethodName())
 				.addModifiers(Modifier.PUBLIC)
-				.returns(void.class);
+				.returns(boolean.class);
 		
 		String comments = method.getComments();
 		if(comments != null)
@@ -196,8 +255,13 @@ DataObjectProcessor dataObjects;
 			methodBuilder.addParameter(type, par.name);
 		}
 		
+		//Check if session is in correct state
+		methodBuilder.beginControlFlow("if(session == null || !session.isValid())");
+		methodBuilder.addStatement("return false");
+		methodBuilder.endControlFlow();
+		
 		//Proxy Subscription Handler
-		TypeName eventType = ClassName.bestGuess(method.returnType.getCanonicalName());
+		TypeName eventType = ClassName.bestGuess(method.getReturnType().getCanonicalName());
 		if(method.isReturnArray())
 			eventType = ArrayTypeName.of(eventType);
 		String subscriptionHandlerVar = "proxyHandler";
@@ -219,11 +283,12 @@ DataObjectProcessor dataObjects;
 		}
 		String methodObj = "methodObject";
 		methodBuilder.addStatement("$T $L = new $T()", JSONObject.class, methodObj, JSONObject.class);
-		methodBuilder.addCode("$L.put($S, $L);", methodObj, method.name, parArray);
+		methodBuilder.addCode("$L.put($S, $L);", methodObj, method.getFullName(), parArray);
 		
 		//Send to Core
-		methodBuilder.addStatement("clientCore.callSubscribe(sessionId, $L.toString(), $L)", methodObj, subscriptionHandlerVar);
-
+		methodBuilder.addStatement("clientCore.callSubscribe(session.getSessionId(), $L.toString(), $L)", methodObj, subscriptionHandlerVar);
+		methodBuilder.addStatement("return true");
+		
 		return methodBuilder.build();
 	}
 	

@@ -4,7 +4,7 @@ import com.stjerncraft.controlpanel.api.IUnsubscribeHandler;
 import com.stjerncraft.controlpanel.api.annotation.EventHandler;
 import com.stjerncraft.controlpanel.api.annotation.ServiceApi;
 import com.stjerncraft.controlpanel.common.ModuleEvent;
-import com.stjerncraft.controlpanel.common.ModuleInfo;
+import com.stjerncraft.controlpanel.common.data.ModuleInfo;
 
 @ServiceApi(version=1)
 public interface ModuleManagerApi {

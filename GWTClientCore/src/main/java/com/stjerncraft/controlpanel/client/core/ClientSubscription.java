@@ -1,7 +1,6 @@
 package com.stjerncraft.controlpanel.client.core;
 
 import com.stjerncraft.controlpanel.api.client.IClientSubscriptionHandler;
-import com.stjerncraft.controlpanel.client.session.ClientSession;
 
 public class ClientSubscription {
 	private ClientSession session;

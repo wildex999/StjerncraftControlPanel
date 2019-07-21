@@ -1,6 +1,7 @@
 package com.stjerncraft.controlpanel.common;
 
 import com.stjerncraft.controlpanel.api.annotation.DataObject;
+import com.stjerncraft.controlpanel.common.data.ModuleInfo;
 
 /**
  * Event sent out when something changes with a Module

@@ -1,37 +1,42 @@
 package com.stjerncraft.controlpanel.client.core;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import com.google.gwt.user.client.Timer;
 import com.stjerncraft.controlpanel.api.client.ICallMethodReturnHandler;
+import com.stjerncraft.controlpanel.api.client.IClientApiLibrary;
 import com.stjerncraft.controlpanel.api.client.IClientSubscriptionHandler;
+import com.stjerncraft.controlpanel.api.client.IServiceApiInfo;
+import com.stjerncraft.controlpanel.api.client.IServiceProviderInfo;
+import com.stjerncraft.controlpanel.api.client.ServiceProviderPriority;
 import com.stjerncraft.controlpanel.client.api.GlobalClientCore;
 import com.stjerncraft.controlpanel.client.api.IClientCoreApi;
+import com.stjerncraft.controlpanel.common.api.CoreApiLibrary;
+import com.stjerncraft.controlpanel.client.api.IClientModuleManager;
+import com.stjerncraft.controlpanel.client.api.IClientServiceManager;
+import com.stjerncraft.controlpanel.client.api.IServiceManagerEventHandler;
 import com.stjerncraft.controlpanel.client.api.session.IClientSession;
 import com.stjerncraft.controlpanel.client.api.session.ISessionListener;
 import com.stjerncraft.controlpanel.client.api.session.SessionState;
 import com.stjerncraft.controlpanel.client.messages.Messages;
-import com.stjerncraft.controlpanel.client.session.ClientSession;
 import com.stjerncraft.controlpanel.client.websocket.IWebsocketListener;
 import com.stjerncraft.controlpanel.client.websocket.WebSocket;
 import com.stjerncraft.controlpanel.client.websocket.WebSocket.ReadyState;
 import com.stjerncraft.controlpanel.common.Statics;
 import com.stjerncraft.controlpanel.common.Version;
-import com.stjerncraft.controlpanel.common.api.CoreApiClient;
-import com.stjerncraft.controlpanel.common.data.IServiceApiInfo;
-import com.stjerncraft.controlpanel.common.data.IServiceProviderInfo;
 import com.stjerncraft.controlpanel.common.data.ServiceApiInfo;
 import com.stjerncraft.controlpanel.common.data.ServiceProviderInfo;
 import com.stjerncraft.controlpanel.common.messages.MessageCallMethod;
 import com.stjerncraft.controlpanel.common.messages.MessageCallMethodReply;
 import com.stjerncraft.controlpanel.common.messages.MessageCallSubscribe;
 import com.stjerncraft.controlpanel.common.messages.MessageCallSubscribeReply;
+import com.stjerncraft.controlpanel.common.messages.MessageEndSession;
 import com.stjerncraft.controlpanel.common.messages.MessageEndSubscription;
 import com.stjerncraft.controlpanel.common.messages.MessageSessionAccepted;
-import com.stjerncraft.controlpanel.common.messages.MessageSessionState;
 import com.stjerncraft.controlpanel.common.messages.MessageStartSession;
 import com.stjerncraft.controlpanel.common.messages.MessageSubscriptionEvent;
 import com.stjerncraft.controlpanel.common.messages.MessageVersion;
@@ -48,11 +53,15 @@ public class ClientCore implements IClientCoreApi {
 	private Map<Integer, ClientSubscription> subscriptions; //Map of SubscriptionId to Subscription
 	private Map<Integer, ICallMethodReturnHandler<String>> callMethodCallbacks; //Map of callId to return callback for callMethod.
 	
+	//Session that should be restarted once we get back a connection
+	private List<ClientSession> sessionsToRestart;
+	
 	private String server;
 	private WebSocket socket;
 	private Messages messages;
-	
-	protected ClientSession coreApiSession;
+	private ClientSession coreApiSession;
+	private ClientModuleManager moduleManager;
+	private ClientServiceManager serviceManager;
 	
 	private Timer reconnectTimer;
 	private int reconnectTime = 5000; //How long to wait before trying to reconnect
@@ -67,6 +76,7 @@ public class ClientCore implements IClientCoreApi {
 		callMethodCallbacks = new HashMap<>();
 		pendingSubscriptions = new HashMap<>();
 		subscriptions = new HashMap<>();
+		sessionsToRestart = new ArrayList<ClientSession>();
 		
 		reconnectTimer = new Timer() {
 			
@@ -76,25 +86,24 @@ public class ClientCore implements IClientCoreApi {
 			}
 		};
 		
-		ServiceApiInfo coreApi = new ServiceApiInfo(CoreApiClient.getApiName(), CoreApiClient.getApiVersion());
-		ServiceProviderInfo coreServiceProvider = new ServiceProviderInfo(Statics.CORE_PROVIDER_UUID, Statics.CORE_AGENT_UUID, null);
-		ClientCore self = this;
+		logger.info("Starting Client Core...");
+		GlobalClientCore.set(this);
+		
+		ServiceApiInfo coreApi = new ServiceApiInfo(CoreApiLibrary.getName(), CoreApiLibrary.getVersion());
+		ServiceProviderInfo coreServiceProvider = new ServiceProviderInfo(Statics.CORE_PROVIDER_UUID, Statics.CORE_AGENT_UUID, ServiceProviderPriority.NORMAL, null);
 		
 		coreApiSession = new ClientSession(coreApi, coreServiceProvider, new ISessionListener() {
 			
 			@Override
 			public void onStarted(IClientSession session) {
-				//Login user
-				//Start Module Manager
-				
-				CoreApiClient coreClient = new CoreApiClient(self, session.getSessionId());
-				coreClient.getAgents((agents) -> {
-					logger.info("Got Agents: " + agents);
-				});	
+				logger.info("Core Session Accepted!");
+				//Load WebView?
 			}
 			
 			@Override
 			public void onRejected(IClientSession session) {
+				logger.info("Core Session Rejected!");
+				
 				//Retry
 				if(socket.getReadyState() == ReadyState.OPEN)
 					startExistingSession(coreApiSession);
@@ -102,6 +111,8 @@ public class ClientCore implements IClientCoreApi {
 			
 			@Override
 			public void onEnded(IClientSession session) {
+				logger.info("Core Session Ended!");
+				
 				//Re-open Core Session if lost
 				//TODO: Handle this better. Why was it lost? This should only happen if the connection is lost.
 				if(socket.getReadyState() == ReadyState.OPEN)
@@ -109,11 +120,21 @@ public class ClientCore implements IClientCoreApi {
 			}
 		});
 		
-		
 		messages = new Messages();
 		setupMessageHandlers();
 		
-		GlobalClientCore.set(this);
+		moduleManager = new ClientModuleManager(this);
+		
+		serviceManager = new ClientServiceManager(this);
+		serviceManager.setup();
+		serviceManager.addEventHandler(new IServiceManagerEventHandler() {
+			
+			@Override
+			public void onFullUpdate(IClientServiceManager serviceManager) {
+				//We should have received a Module Manager Service Provider at this point
+				moduleManager.setup();
+			}
+		});
 		
 		connect();
 	}
@@ -125,13 +146,44 @@ public class ClientCore implements IClientCoreApi {
 	 * @param listener Optional Listener for events like onStarted, onEnded etc. 
 	 * @return The new pending Session, or null if it failed.
 	 */
-	public IClientSession startSession(IServiceApiInfo api, IServiceProviderInfo serviceProvider, ISessionListener listener) {
+	public IClientSession startSessionRaw(IServiceApiInfo api, IServiceProviderInfo serviceProvider, ISessionListener listener) {
 		ClientSession newSession = new ClientSession(api, serviceProvider, listener);
 
+		//TODO: Verify that the given ServiceProvider actually implements the API(ServiceManager should have a full list of supported API's)?
+		
 		if(!startExistingSession(newSession))
 			return null;
 		
 		return newSession;
+	}
+	
+	@Override
+	public <T extends IClientApiLibrary> IClientSession startSessionSpecific(T apiLibrary, IServiceProviderInfo serviceProvider, ISessionListener listener) {
+		ServiceApiInfo apiInfo = new ServiceApiInfo(apiLibrary.getApiName(), apiLibrary.getApiVersion());
+		IClientSession session = startSessionRaw(apiInfo,  serviceProvider, listener);
+		if(session == null)
+			return null;
+		
+		apiLibrary.setSession(session);
+		return session;
+	}
+	
+	@Override
+	public <T extends IClientApiLibrary> IClientSession startSession(T apiLibrary, ISessionListener listener) {
+		//Find Service Provider in the ServiceManager
+		ServiceApiInfo apiInfo = new ServiceApiInfo(apiLibrary.getApiName(), apiLibrary.getApiVersion());
+		IServiceProviderInfo serviceProvider = serviceManager.getBestProviderForApi(apiInfo);
+		if(serviceProvider == null) {
+			logger.warning("Failed to start session with API " + apiInfo.getId() + ", no Service Provider found!");
+			return null;
+		}
+		
+		IClientSession session = startSessionRaw(apiInfo, serviceProvider, listener);
+		if(session == null)
+			return null;
+		
+		apiLibrary.setSession(session);
+		return session;
 	}
 	
 	/**
@@ -141,22 +193,43 @@ public class ClientCore implements IClientCoreApi {
 	 * @param session
 	 * @return True if the session is being restarted, false if it was already started or invalid.
 	 */
-	public boolean startExistingSession(ClientSession session) {
+	public boolean startExistingSession(IClientSession session) {
+		if(session == null)
+			return false;
+		
 		SessionState sessionState = session.getCurrentState();
 		if(sessionState == SessionState.PENDING || sessionState == SessionState.ACTIVE)
 			return false;
 		if(session.getApi() == null || session.getServiceProvider() == null)
 			return false;
-		
+		if(socket == null || socket.getReadyState() != ReadyState.OPEN) {
+			//Add it to the list of Sessions to try when we have a Connection
+			logger.warning("Deferring StartSession due to no valid connection to Server");
+			sessionsToRestart.add((ClientSession)session);
+			return true;
+		}
+			
 		int sessionRequestId = requestIdCounter++;
 		logger.info(this + " Starting Session with Service Provider " + session.getServiceProvider().getUuid() + " for API " + session.getApi().getName());
 		
-		pendingSessions.put(sessionRequestId, session);
+		ClientSession clientSession = (ClientSession)session;
+		pendingSessions.put(sessionRequestId, clientSession);
 		messages.sendMessage(new MessageStartSession(sessionRequestId, session.getApi().getId(), session.getServiceProvider().getUuid()));
+		clientSession.onPending();
 		
 		//TODO: Handle timeout
 		
 		return true;
+	}
+	
+	@Override
+	public void endSession(IClientSession session) {
+		ClientSession clientSession = sessions.remove(session.getSessionId());
+		
+		if(clientSession == null)
+			return;
+		
+		clientSession.onEnded(SessionEndedReason.ClientEnded);
 	}
 	
 	@Override
@@ -200,12 +273,17 @@ public class ClientCore implements IClientCoreApi {
 		messages.sendMessage(new MessageEndSubscription(sub.getSession().getSessionId(), sub.getSubscriptionId()));
 	}
 	
+	@Override
+	public IClientModuleManager getModuleManager() {
+		return moduleManager;
+	}
+	
 	public IClientSession getCoreSession() {
 		return coreApiSession;
 	}
 	
 	private void connect() {
-		logger.info("Starting Client Core");
+		logger.info("Connecting to Server...");
 		
 		socket = new WebSocket("ws://" + server + "/ws");
 		messages.setSocket(socket);
@@ -221,15 +299,16 @@ public class ClientCore implements IClientCoreApi {
 				
 				//TODO: Inform listeners about disconnect
 				
-				//Reject Pending Sessions
+				//Retry Pending Sessions on reconnect
 				for(ClientSession session : pendingSessions.values()) {
-					session.onRejected();
+					sessionsToRestart.add(session);
 				}
 				pendingSessions.clear();
 				
-				//Close Active Sessions
+				//Close Active Sessions, adding them to the retry list on reconnect
 				for(ClientSession session : sessions.values()) {
-					session.onEnded();
+					session.onEnded(SessionEndedReason.Disconnect);
+					sessionsToRestart.add(session);
 				}
 				sessions.clear();
 				
@@ -249,6 +328,11 @@ public class ClientCore implements IClientCoreApi {
 			logger.info("GOT VERSION: " + msg.versionMajor + "." + msg.versionMinor + "." + msg.versionFix + " on Socket: " + ws);
 			startExistingSession(coreApiSession);
 			
+			//Restart any interrupted Sessions due to disconnect
+			for(ClientSession session : sessionsToRestart) {
+				startExistingSession(session);
+			}
+			sessionsToRestart.clear();
 		});
 		
 		messages.setHandler(MessageSessionAccepted.class, (msg, ws) -> {
@@ -267,9 +351,13 @@ public class ClientCore implements IClientCoreApi {
 			pendingSession.onStarted(msg.sessionId);
 			
 		});
-		
-		messages.setHandler(MessageSessionState.class, (msg, ws) -> {
-			logger.info("SessionState:_" + msg.sessionId + " | " + msg.started);
+	
+		messages.setHandler(MessageEndSession.class, (msg, ws) -> {
+			ClientSession session = sessions.remove(msg.sessionId);
+			if(session == null)
+				return;
+			
+			session.onEnded(SessionEndedReason.RemoteEnded);
 		});
 		
 		messages.setHandler(MessageCallMethodReply.class, (msg, ws) -> {
@@ -304,5 +392,4 @@ public class ClientCore implements IClientCoreApi {
 			sub.getHandler().OnEvent(msg.subscriptionId, msg.valueJson);
 		});
 	}
-
 }

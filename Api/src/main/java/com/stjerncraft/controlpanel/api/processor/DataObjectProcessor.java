@@ -19,7 +19,7 @@ import javax.tools.Diagnostic.Kind;
 
 import com.stjerncraft.controlpanel.api.annotation.DataObject;
 
-class DataObjectProcessor {
+public class DataObjectProcessor {
 	
 	private Map<String, DataObjectInfo> dataObjects = new HashMap<>();
 	private ProcessingEnvironment procEnv;

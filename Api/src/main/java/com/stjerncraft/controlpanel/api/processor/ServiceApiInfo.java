@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-class ServiceApiInfo {
+public class ServiceApiInfo {
 	protected String name;
 	protected int version;
 	protected Set<Method> methods;

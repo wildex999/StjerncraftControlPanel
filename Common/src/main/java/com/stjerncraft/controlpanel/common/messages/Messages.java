@@ -29,7 +29,6 @@ public class Messages<C> {
 		register(MessageVersion.class);
 		register(MessageStartSession.class);
 		register(MessageSessionAccepted.class);
-		register(MessageSessionState.class);
 		register(MessageEndSession.class);
 		register(MessageCallMethod.class);
 		register(MessageCallMethodReply.class);

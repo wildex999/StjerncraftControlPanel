@@ -5,9 +5,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 
-import com.google.common.base.Objects;
 import com.google.common.io.Files;
-import com.stjerncraft.controlpanel.common.ModuleInfo;
+import com.stjerncraft.controlpanel.common.data.ModuleInfo;
 
 
 public class Module extends ModuleInfo {	
@@ -45,24 +44,5 @@ public class Module extends ModuleInfo {
 		
 		File configFile = location.toFile();
 		Files.write(config.save(), configFile, Charset.defaultCharset());
-	}
-	
-	@Override
-	public boolean equals(Object obj) {
-		if(obj == null || !(obj instanceof Module))
-			return false;
-		
-		if(obj == this)
-			return true;
-		
-		Module other = (Module)obj;
-		
-		return Objects.equal(name, other.name) &&
-				Objects.equal(version, other.version);
-	}
-	
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(name, version);
 	}
 }

@@ -1,16 +1,17 @@
-package com.stjerncraft.controlpanel.client.session;
+package com.stjerncraft.controlpanel.client.core;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import com.stjerncraft.controlpanel.api.client.IServiceApiInfo;
+import com.stjerncraft.controlpanel.api.client.IServiceProviderInfo;
 import com.stjerncraft.controlpanel.client.api.session.IClientSession;
 import com.stjerncraft.controlpanel.client.api.session.ISessionListener;
 import com.stjerncraft.controlpanel.client.api.session.SessionState;
-import com.stjerncraft.controlpanel.common.data.IServiceApiInfo;
-import com.stjerncraft.controlpanel.common.data.IServiceProviderInfo;
 
 import jsinterop.annotations.JsType;
+
 
 @JsType
 public class ClientSession implements IClientSession {
@@ -23,10 +24,12 @@ public class ClientSession implements IClientSession {
 	private IServiceApiInfo api;
 	private IServiceProviderInfo serviceProvider;
 	
+	protected boolean shouldRestart;
+	
 	/**
-	 * @param socket Valid connection the Core Server.
 	 * @param api
 	 * @param serviceProvider
+	 * @param listener
 	 */
 	public ClientSession(IServiceApiInfo api, IServiceProviderInfo serviceProvider, ISessionListener listener) {
 		this.api = api;
@@ -38,13 +41,24 @@ public class ClientSession implements IClientSession {
 			addListener(listener);
 	}
 	
-	public void addListener(ISessionListener listener) {
-		listeners.add(listener);
+	@Override
+	public boolean addListener(ISessionListener listener) {
+		return listeners.add(listener);
+	}
+	
+	@Override
+	public boolean removeListener(ISessionListener listener) {
+		return listeners.remove(listener);
 	}
 	
 	@Override
 	public SessionState getCurrentState() {
 		return state;
+	}
+	
+	@Override
+	public boolean isValid() {
+		return getCurrentState() == SessionState.ACTIVE;
 	}
 	
 	@Override
@@ -94,8 +108,8 @@ public class ClientSession implements IClientSession {
 	 * Called when the Session is ended either locally or remotely.
 	 * This will do cleanup and end all Subscriptions.
 	 */
-	public void onEnded() {
-		logger.info("Ended Session " + sessionId);
+	public void onEnded(SessionEndedReason reason) {
+		logger.info("Ended Session " + sessionId + " for reason " + reason);
 		state = SessionState.INACTIVE;
 		listeners.forEach(listener -> { listener.onEnded(this); });
 		

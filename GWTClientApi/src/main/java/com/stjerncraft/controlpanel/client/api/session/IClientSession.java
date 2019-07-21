@@ -1,14 +1,13 @@
 package com.stjerncraft.controlpanel.client.api.session;
 
-import com.stjerncraft.controlpanel.common.data.IServiceApiInfo;
-import com.stjerncraft.controlpanel.common.data.IServiceProviderInfo;
+import com.stjerncraft.controlpanel.api.client.ISession;
 
 import jsinterop.annotations.JsType;
 
 @JsType(isNative=true)
-public interface IClientSession {
-	IServiceApiInfo getApi();
-	IServiceProviderInfo getServiceProvider();
+public interface IClientSession extends ISession {
 	SessionState getCurrentState();
-	int getSessionId();
+	
+	boolean addListener(ISessionListener listener);
+	boolean removeListener(ISessionListener listener);
 }

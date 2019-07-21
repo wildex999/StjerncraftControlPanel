@@ -4,7 +4,7 @@ package com.stjerncraft.controlpanel.api.processor;
  * A Field consists of a name and type, and is used to describe variables in a DataObject, Method and Event.
  */
 
-class Field {
+public class Field {
 	public FieldType fieldType;
 	public boolean isArray;
 	public String name;

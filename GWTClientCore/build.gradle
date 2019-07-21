@@ -46,6 +46,7 @@ gwt {
 	
 	compiler {
 		style = 'PRETTY'
+		logLevel = 'INFO'
 	}
 	
     modules 'com.stjerncraft.controlpanel.client.GWTClientCore'

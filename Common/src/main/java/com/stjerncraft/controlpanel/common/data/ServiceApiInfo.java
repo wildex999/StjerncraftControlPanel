@@ -1,6 +1,9 @@
 package com.stjerncraft.controlpanel.common.data;
 
+import java.util.Objects;
+
 import com.stjerncraft.controlpanel.api.annotation.DataObject;
+import com.stjerncraft.controlpanel.api.client.IServiceApiInfo;
 
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
@@ -14,8 +17,8 @@ import jsinterop.annotations.JsType;
 @JsType
 @DataObject
 public class ServiceApiInfo implements IServiceApiInfo {
-	private String name;
-	private int version;
+	public String name;
+	public int version;
 	
 	@JsIgnore
 	public ServiceApiInfo() {
@@ -68,5 +71,10 @@ public class ServiceApiInfo implements IServiceApiInfo {
 		
 
 		return true;
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, version);
 	}
 }

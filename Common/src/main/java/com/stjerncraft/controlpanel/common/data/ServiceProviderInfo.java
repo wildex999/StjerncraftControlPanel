@@ -1,8 +1,12 @@
 package com.stjerncraft.controlpanel.common.data;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import com.stjerncraft.controlpanel.api.annotation.DataObject;
+import com.stjerncraft.controlpanel.api.client.IServiceApiInfo;
+import com.stjerncraft.controlpanel.api.client.IServiceProviderInfo;
+import com.stjerncraft.controlpanel.api.client.ServiceProviderPriority;
 
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
@@ -10,20 +14,22 @@ import jsinterop.annotations.JsType;
 @JsType
 @DataObject
 public class ServiceProviderInfo implements IServiceProviderInfo {
-	private String uuid; //The unique id of the Service Provider
-	private String agentUuid;  //The ID of the agent on which this Service Provider exists
-	private ServiceApiInfo[] apis; //APIs implemented by this Service Provider
+	public String uuid; //The unique id of the Service Provider
+	public String agentUuid;  //The ID of the agent on which this Service Provider exists
+	public ServiceProviderPriority priority; //TODO: Use system like HIGHEST, HIGH, NORMAL, LOW, LOWEST
+	public ServiceApiInfo[] apis; //APIs implemented by this Service Provider
 	
-	public ServiceProviderInfo(String uuid, String agentUuid, ServiceApiInfo[] apis) {
+	public ServiceProviderInfo(String uuid, String agentUuid, ServiceProviderPriority priority, ServiceApiInfo[] apis) {
 		
 		this.uuid = uuid;
 		this.agentUuid = agentUuid;
+		this.priority = priority;
 		this.apis = apis;
 	}
 	
 	@JsIgnore
 	public ServiceProviderInfo() {
-		this("", "", new ServiceApiInfo[] {});
+		this("", "", ServiceProviderPriority.NORMAL, new ServiceApiInfo[] {});
 	}
 	
 	@Override
@@ -37,7 +43,12 @@ public class ServiceProviderInfo implements IServiceProviderInfo {
 	}
 	
 	@Override
-	public ServiceApiInfo[] getApis() {
+	public ServiceProviderPriority getPriority() {
+		return priority;
+	}
+	
+	@Override
+	public IServiceApiInfo[] getApis() {
 		return apis;
 	}
 	
@@ -63,5 +74,10 @@ public class ServiceProviderInfo implements IServiceProviderInfo {
 		}
 		
 		return true;
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(uuid, agentUuid, apis);
 	}
 }

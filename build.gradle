@@ -25,8 +25,8 @@ task copyClientCore(type: Copy) {
 task copyWebView(type: Copy) {
 	evaluationDependsOn(":GWTWebView")
 	dependsOn(":GWTWebView:compileGwt")
-	from project(":GWTWebView").file("war")
-	into file("target/public")
+	from project(":GWTWebView").file("war/webview")
+	into file("target/modules/webview")
 }
 
 task copyCore(type: Copy) {

@@ -21,7 +21,7 @@ import com.stjerncraft.controlpanel.api.IDataObjectGenerated;
  * The generated class will handle the parsing and serialization of the Data Class.
  */
 
-class DataObjectClassGenerator {
+public class DataObjectClassGenerator {
 	DataObjectProcessor dataObjects;
 	
 	public DataObjectClassGenerator(DataObjectProcessor dataObjects) {

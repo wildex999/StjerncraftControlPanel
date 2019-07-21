@@ -12,8 +12,8 @@ import com.stjerncraft.controlpanel.api.IServiceProvider;
 import com.stjerncraft.controlpanel.api.IUnsubscribeHandler;
 import com.stjerncraft.controlpanel.common.ModuleEvent;
 import com.stjerncraft.controlpanel.common.ModuleEvent.Action;
-import com.stjerncraft.controlpanel.common.ModuleInfo;
 import com.stjerncraft.controlpanel.common.api.ModuleManagerApi;
+import com.stjerncraft.controlpanel.common.data.ModuleInfo;
 
 public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 

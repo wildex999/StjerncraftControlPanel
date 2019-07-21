@@ -2,13 +2,8 @@ package com.stjerncraft.controlpanel.client;
 
 import java.util.logging.Logger;
 
-import com.stjerncraft.controlpanel.client.core.ClientCore;
-
-import com.google.gwt.core.client.Callback;
 import com.google.gwt.core.client.EntryPoint;
-import com.google.gwt.core.client.ScriptInjector;
-import com.google.gwt.user.client.Timer;
-import com.google.gwt.user.client.Window;
+import com.stjerncraft.controlpanel.client.core.ClientCore;
 
 public class Main implements EntryPoint {
 	static Logger logger = Logger.getLogger("ClientCoreMain");
@@ -18,7 +13,7 @@ public class Main implements EntryPoint {
 	public void onModuleLoad() {
 		clientCore = new ClientCore("localhost:8080");
 		
-		Timer timer = new Timer()
+		/*Timer timer = new Timer()
         {
             @Override
             public void run()
@@ -35,7 +30,7 @@ public class Main implements EntryPoint {
             }
         };
 
-        timer.schedule(1000);
+        timer.schedule(1000);*/
 		
 
 	}
