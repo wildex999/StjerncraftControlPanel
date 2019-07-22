@@ -9,6 +9,13 @@ import com.stjerncraft.controlpanel.common.data.ModuleInfo;
 @ServiceApi(version=1)
 public interface ModuleManagerApi {
 	/**
+	 * Get the named module if it exists.
+	 * @param name
+	 * @return Null if no module with that name exists
+	 */
+	public ModuleInfo getModule(String name);
+	
+	/**
 	 * Return a list of all modules.
 	 * Note: Will only list modules which the user has permission to view.
 	 * @return

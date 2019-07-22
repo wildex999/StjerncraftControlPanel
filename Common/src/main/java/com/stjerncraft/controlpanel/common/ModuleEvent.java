@@ -17,12 +17,12 @@ public class ModuleEvent {
 	}
 
 	public Action action;
-	public ModuleInfo module; //TODO: Allow Array for batching large changes?
+	public ModuleInfo[] modules;
 	
 	public ModuleEvent() {}
 	
-	public ModuleEvent(Action action, ModuleInfo module) {
+	public ModuleEvent(Action action, ModuleInfo... modules) {
 		this.action = action;
-		this.module = module;
+		this.modules = modules;
 	}
 }

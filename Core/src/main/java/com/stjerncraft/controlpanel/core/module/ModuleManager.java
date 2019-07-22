@@ -1,9 +1,17 @@
 package com.stjerncraft.controlpanel.core.module;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.stjerncraft.controlpanel.api.IClient;
 import com.stjerncraft.controlpanel.api.IEventSubscription;
@@ -16,17 +24,21 @@ import com.stjerncraft.controlpanel.common.api.ModuleManagerApi;
 import com.stjerncraft.controlpanel.common.data.ModuleInfo;
 
 public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
-
-	private ModuleManagerConfig config;
-	private Map<String, Module> modules;
-	private Map<String, Module> activeModules;
+	private static final Logger logger = LoggerFactory.getLogger(ModuleManager.class);
 	
-	private Map<Integer, IEventSubscription> subscriptions;
+	
+	private ModuleManagerConfig config;
+	private Map<String, Module> modules; //Name -> Module
+	private Map<String, Module> activeModules; //Name -> Module
+	
+	private Map<Integer, IEventSubscription> subscriptions; //SubscriptionId -> Subscription
 	
 	IServiceManager serviceManager;
 	
 	public ModuleManager() {
-		modules = new HashMap<>();
+		//Getting the Modules must be Thread Safe
+		modules = new ConcurrentHashMap<>();
+		
 		activeModules = new HashMap<>();
 		subscriptions = new HashMap<>();
 	}
@@ -34,20 +46,85 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 	/**
 	 * Load the modules, using the given config which contains the list of active modules
 	 * @param config A pre-filled config
+	 * @throws IOException 
 	 */
-	public void loadModules(ModuleManagerConfig config) {
+	public void loadModules(ModuleManagerConfig config) throws IOException {
 		this.config = config;
 		
-		//Load modules from the given location
+		//TODO: Don't Remove Modules which are still here, but instead mark them as updated
 		
+		//Inform subscriptions about clearing existing modules
+		broadcastEvent(new ModuleEvent(Action.Deactivated, getActiveModules()));
+		broadcastEvent(new ModuleEvent(Action.Removed, getAllModules()));
+		
+		modules.clear();
+		activeModules.clear();
+		
+		//Load modules from the given location
+		Files.list(new File("modules").toPath()).forEach(path -> {
+			File file = path.toFile();
+			if(!file.isDirectory())
+				return;
+			
+			String moduleName = file.getName();
+			
+			logger.info("Loading Module: " + moduleName);
+			
+			//Try to get a Config for the module
+			File configFile = Paths.get(path.toString(), "config.json").toFile();
+			if(!configFile.exists()) {
+				logger.error("No config file found at " + configFile + "!");
+				return;
+			}
+			
+			Module newModule = new Module(moduleName);
+			try {
+				newModule.load(path);
+			} catch (IOException | ModuleConfigLoadException e) {
+				logger.error("Failed to load module " + moduleName + ": " + e);
+				return;
+			}
+			
+			//Verify the existence of the Module javascript module.nocache.js
+			File sourceFile = newModule.getSourceFile().toFile();
+			if(!sourceFile.exists()) {
+				logger.error("No main file found for " + moduleName + ". Looking for " + sourceFile.toPath().toString());
+				return;
+			}
+			
+			modules.put(newModule.getName(), newModule);
+			logger.info("Loaded Module: " + newModule.descriptiveName);
+		});
 		
 		//Make list of all active modules
+		for(Module module : modules.values()) {
+			if(config.active.contains(module.getName())) {
+				logger.info("Activating Module: " + module.descriptiveName);
+				activeModules.put(module.getName(), module);
+			}
+		}
+		
+		
+		//Send updated list to Subscriptions
+		broadcastEvent(new ModuleEvent(Action.Added, getAllModules()));
+		broadcastEvent(new ModuleEvent(Action.Activated, getActiveModules()));
 	}
 	
 	//Check for removed and added modules in location
 	public void refreshModules() {
 		if(config == null)
 			return;
+	}
+	
+	/**
+	 * This must be Thread-Safe
+	 * @param name
+	 * @return
+	 */
+	@Override
+	public Module getModule(String name) {
+		Module module = modules.get(name);
+		return module;
 	}
 	
 	@Override
@@ -60,6 +137,9 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 		serviceManager = null;
 	}
 
+	/**
+	 * This must be Thread-Safe
+	 */
 	@Override
 	public ModuleInfo[] getAllModules() {
 		//TODO: Check permission of user, and filter the list
@@ -80,14 +160,14 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 		
 		//TODO: Check if user has permission to activate the module
 		
-		String id = module.getId();
-		Module storedModule = modules.get(id);
+		String name = module.getName();
+		Module storedModule = modules.get(name);
 		if(storedModule == null)
 			return false;
-		if(activeModules.containsKey(id))
+		if(activeModules.containsKey(name))
 			return false;
 		
-		activeModules.put(id, storedModule);
+		activeModules.put(name, storedModule);
 		
 		ModuleEvent event = new ModuleEvent(Action.Activated, module);
 		broadcastEvent(event);
@@ -114,7 +194,7 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 			return false;
 		
 		//TODO: Check if the user has permission to deactivate the module
-		return activeModules.remove(module.getId()) != null;
+		return activeModules.remove(module.getName()) != null;
 	}
 
 	@Override
@@ -145,7 +225,7 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 	 */
 	private void broadcastEvent(ModuleEvent event) {
 		for(IEventSubscription subscription : subscriptions.values()) {
-			//TODO: Verify that subscription user has permission to "see" this Module(And thus any events involving it)
+			//TODO: Remove Modules which the given user is not allowed to see.
 			subscription.sendEvent(event);
 		}
 	}

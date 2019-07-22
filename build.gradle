@@ -39,6 +39,7 @@ task copyCore(type: Copy) {
 }
 
 task copyBuild(type: Copy) {
+	delete targetDir
 	dependsOn 'copyCore'
 	dependsOn 'copyClientCore'
 	dependsOn 'copyWebView'

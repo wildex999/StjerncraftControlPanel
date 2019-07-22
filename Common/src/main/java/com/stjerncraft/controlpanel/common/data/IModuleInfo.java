@@ -4,13 +4,16 @@ import jsinterop.annotations.JsType;
 
 @JsType(isNative=true)
 public interface IModuleInfo {
-	String getName();
-	int getVersion();
-	String getId();
-	
 	/**
-	 * Get the Path to the module script file.
+	 * Get the Simple name for this module.
+	 * This must be unique, and is used as the path for loading the module.
 	 * @return
 	 */
-	String getFilePath();
+	String getName();
+	
+	/**
+	 * Get the Dexcriptive name for this Module, which is displayed to the user.
+	 * @return
+	 */
+	String getDescriptiveName();
 }

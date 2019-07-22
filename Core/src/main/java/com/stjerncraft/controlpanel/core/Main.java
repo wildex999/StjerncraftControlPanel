@@ -22,6 +22,8 @@ import com.stjerncraft.controlpanel.exceptions.MissingServiceException;
 public class Main {
 	private static final Logger logger = LoggerFactory.getLogger(Main.class);
 	
+	private static String modulesLocation = "modules";
+	
 	public static void main(String[] args) {		
 		Core core = new Core();
 		
@@ -57,7 +59,7 @@ public class Main {
 		//Start Web Server
 		//TODO
 		logger.info("Starting HTTP Server");
-		HTTPServer server = new HTTPServer(core, (short) 8080);
+		HTTPServer server = new HTTPServer(core, (short) 8080, Paths.get(modulesLocation));
 		try {
 			server.start();
 		} catch (MissingServiceException | IOException e) {
@@ -89,10 +91,10 @@ public class Main {
 		ModuleManager moduleManager = new ModuleManager();
 		String modulesConfigJson = null;
 		ModuleManagerConfig config = null;
-		String modulesConfigPath = "modules/config.json";
+		Path modulesConfigPath = Paths.get(modulesLocation, "config.json");
 		
 		try {
-			modulesConfigJson = new String(Files.readAllBytes(Paths.get(modulesConfigPath)));
+			modulesConfigJson = new String(Files.readAllBytes(modulesConfigPath));
 		} catch (IOException e) {
 			if(!(e instanceof NoSuchFileException)) {
 				logger.error("Unable to read " + modulesConfigPath + ": " + e);
@@ -101,7 +103,7 @@ public class Main {
 			logger.warn("No Module Manager config was found at " + modulesConfigPath);
 		}
 		
-		
+		//Create default Config if none was found
 		if(modulesConfigJson != null && !modulesConfigJson.isEmpty()) {
 			try {
 				config = ModuleManagerConfig.load(modulesConfigJson);
@@ -114,7 +116,7 @@ public class Main {
 			logger.info("Creating default Module Manager config at " + modulesConfigPath);
 			config = ModuleManagerConfig.createDefault();
 			try {
-				Path newPath = Paths.get(modulesConfigPath);
+				Path newPath = modulesConfigPath;
 				newPath.toFile().getParentFile().mkdirs();
 				Files.write(newPath, config.save().getBytes(), StandardOpenOption.CREATE_NEW);
 			} catch (IOException e) {
@@ -123,7 +125,14 @@ public class Main {
 			}
 		}
 
-		moduleManager.loadModules(config);
+		//Try reading all the Modules
+		try {
+			moduleManager.loadModules(config);
+		} catch (IOException e) {
+			logger.error("Failed to load modules: " + e);
+			return null;
+		}
+		
 		
 		return moduleManager;
 	}

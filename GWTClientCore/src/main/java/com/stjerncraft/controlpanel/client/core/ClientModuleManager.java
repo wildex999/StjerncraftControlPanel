@@ -139,7 +139,7 @@ public class ClientModuleManager implements IClientModuleManager {
 	 */
 	private boolean shouldModuleBeActive(IClientModule module) {
 		for(ModuleInfo moduleInfo : serverActiveModules) {
-			if(moduleInfo.getName().equals(module.getName()) && moduleInfo.getVersion() == module.getVersion())
+			if(moduleInfo.getName().equals(module.getName()))
 				return true;
 		}
 		
@@ -161,7 +161,7 @@ public class ClientModuleManager implements IClientModuleManager {
 	
 	public boolean isModuleLoaded(ModuleInfo module) {
 		for(IClientModule loadedModule : loadedModules) {
-			if(module.getName().equals(loadedModule.getName()) && module.getVersion() == loadedModule.getVersion())
+			if(module.getName().equals(loadedModule.getName()))
 				return true;
 		}
 		
@@ -201,8 +201,10 @@ public class ClientModuleManager implements IClientModuleManager {
 		if(isModuleLoadingOrLoaded(module))
 			return;
 		
+		logger.info("Loading module: " + module.getDescriptiveName());
+		
 		//Inject the module script
-		ScriptInjector.fromUrl(module.getFilePath()).setCallback(new Callback<Void, Exception>() {
+		ScriptInjector.fromUrl("modules/" + module.getName() + "/" + module.getName() + ".nocache.js").setCallback(new Callback<Void, Exception>() {
 			
 			@Override
 			public void onSuccess(Void result) {
@@ -211,10 +213,10 @@ public class ClientModuleManager implements IClientModuleManager {
 			
 			@Override
 			public void onFailure(Exception reason) {
-				logger.severe("Failed to load Module: " + module.getName() + " at " + module.getFilePath());
+				logger.severe("Failed to load Module: " + module.getName() + " at " + module.getName());
 				//TODO: Propagate this event to the user somehow?
 			}
-		});
+		}).setWindow(ScriptInjector.TOP_WINDOW).inject();
 	}
 
 }

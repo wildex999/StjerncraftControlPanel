@@ -11,18 +11,17 @@ import jsinterop.annotations.JsType;
 @DataObject
 public class ModuleInfo implements IModuleInfo {
 	public String name;
-	public int version;
-	public String path;
+	public String descriptiveName;
 	
 	//DataObject constructor
 	@JsIgnore
 	public ModuleInfo() {
-		this("", 0);
+		this("", "");
 	}
 	
-	public ModuleInfo(String name, int version) {
+	public ModuleInfo(String name, String descriptiveName) {
 		this.name = name;
-		this.version = version;
+		this.descriptiveName = descriptiveName;
 	}
 	
 	@Override
@@ -31,18 +30,8 @@ public class ModuleInfo implements IModuleInfo {
 	}
 	
 	@Override
-	public int getVersion() {
-		return version;
-	}
-	
-	@Override
-	public String getId() {
-		return name + "V" + version;
-	}
-	
-	@Override
-	public String getFilePath() {
-		return path;
+	public String getDescriptiveName() {
+		return descriptiveName;
 	}
 	
 	@Override
@@ -55,8 +44,6 @@ public class ModuleInfo implements IModuleInfo {
 			IModuleInfo other = (IModuleInfo)obj;
 			if(!other.getName().equals(name))
 				return false;
-			if(other.getVersion() != version)
-				return false;
 		} catch(Exception e) {
 			return false;
 		}
@@ -66,6 +53,6 @@ public class ModuleInfo implements IModuleInfo {
 	
 	@Override
 	public int hashCode() {
-		return Objects.hash(name, version);
+		return Objects.hash(name);
 	}
 }

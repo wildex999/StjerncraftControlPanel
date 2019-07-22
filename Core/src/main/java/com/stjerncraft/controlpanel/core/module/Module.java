@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import com.google.common.io.Files;
 import com.stjerncraft.controlpanel.common.data.ModuleInfo;
@@ -11,13 +12,17 @@ import com.stjerncraft.controlpanel.common.data.ModuleInfo;
 
 public class Module extends ModuleInfo {	
 	private ModuleConfig config;
-	private Path location;
+	private Path location; //Path to the module root.
 	
 	//DataObject constructor
 	public Module() {}
 	
-	public Module(String name, int version) {
-		super(name, version);
+	public Module(String name) {
+		super(name, "");
+	}
+	
+	public Path getSourceFile() {
+		return Paths.get(location.toString(), name + ".nocache.js");
 	}
 	
 	/**
@@ -27,11 +32,13 @@ public class Module extends ModuleInfo {
 	 * @throws IOException Thrown if it failed to load the config file.
 	 */
 	public void load(Path location) throws IOException, ModuleConfigLoadException {
-		this.location = location.resolve("config.json");
-		File configFile = this.location.toFile();
+		this.location = location;
+		File configFile = this.location.resolve("config.json").toFile();
 
 		String jsonStr = Files.toString(configFile, Charset.defaultCharset());
 		config = ModuleConfig.load(jsonStr);
+		
+		descriptiveName = config.descriptiveName;
 	}
 	
 	/**

@@ -2,6 +2,7 @@ package com.stjerncraft.controlpanel.core.module;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -50,7 +51,7 @@ public class ModuleManagerConfig {
 	public static ModuleManagerConfig createDefault() {
 		ModuleManagerConfig newConfig = new ModuleManagerConfig();
 		newConfig.location = "modules";
-		newConfig.active = new ArrayList<>();
+		newConfig.active = new ArrayList<>(Arrays.asList("webview"));
 		
 		return newConfig;
 	}
