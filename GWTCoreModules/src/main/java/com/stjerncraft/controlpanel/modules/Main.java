@@ -1,4 +1,4 @@
-package com.stjerncraft.controlpanel.webview;
+package com.stjerncraft.controlpanel.modules;
 
 import java.util.logging.Logger;
 
@@ -7,14 +7,13 @@ import com.stjerncraft.controlpanel.client.api.GlobalClientCore;
 import com.stjerncraft.controlpanel.client.api.IClientCoreApi;
 
 public class Main implements EntryPoint {
-	static Logger logger = Logger.getLogger("WebView.Main");
+	static Logger logger = Logger.getLogger("CoreModules.Main");
 	
 	IClientCoreApi clientCore;
-	WebView webView;
 	
 	@Override
 	public void onModuleLoad() {
-		logger.info("Loading WebView...");
+		logger.info("Loading Core Modules...");
 		
 		clientCore = GlobalClientCore.get();
 		if(clientCore == null) {
@@ -22,10 +21,13 @@ public class Main implements EntryPoint {
 			return;
 		}
 		
-		//Register Module with the Client Core
-		webView = new WebView();
-		clientCore.getModuleManager().registerModule(webView);
-		logger.info("Loaded WebView.");
+		//Load modules
+		
+		
+		//Register the Modules with the Client Core
+		//clientCore.getModuleManager().registerModule(webView);
+		
+		logger.info("Loaded Core Modules.");
 	}
 
 }

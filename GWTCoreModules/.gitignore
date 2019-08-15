@@ -1,0 +1,5 @@
+/test-classes/
+/build/
+/war/
+/gwt-unitCache/
+/.apt_generated/

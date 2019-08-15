@@ -13,14 +13,15 @@ To open the project in eclipse:
 2. Select the root Project directory as "Import Source"
 3. Select all the projects you want, which will open them in the Package Explore.
 4. Install the GWT plugin to work with the GWT projects.
+5. Set the GWT plugin to use GWT 2.8 instead of 2.7, or else you will get errors on JsInterop.
 
 - GWT Development/Debugging -
 You can easily work on and debug a single GWT project.
 1. With the GWT Plugin installed in Eclipse, you can Right click a project and select "Run As -> GWT Development Mode with Jetty".
-2. If asked for a target folder, you can either point it at the local war folder to tets the GWT Project alone, or point it at the "target/public" folder to test it in the context of the whole server and other GWT modules.
-If run in the "target/public" folder it will intercept all load calls for the GWT Module's js files when it happens, and do live-compile with Source maps in Chrome.
+2. If asked for a target folder, you can either point it at the local war folder to tets the GWT Project alone, or point it at the "target/modules" folder to test it in the context of the whole server and other GWT modules.
+If run in the "target/modules" folder it will intercept all load calls for the GWT Module's js files when it happens, and do live-compile with Source maps in Chrome.
 3. Open the URL it makes available in the "Development Mode" tab, usually something like "http://127.0.0.1:8888/index.html".
-Note: If you do not get an URL, make sure there is an index.html file in the choosen location.
+Note: If you run it with the Core Server running, you just open the server url as normal("http://127.0.0.1:8080"), and it will live-compile the module when loaded.
 
 - Cleanup -
 It is recommended to a full clean & build sometimes. This can be done by running "gradlew clean" and "clear_gwt_temp.bat".

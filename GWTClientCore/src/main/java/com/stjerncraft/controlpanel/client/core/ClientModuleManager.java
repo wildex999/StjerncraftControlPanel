@@ -2,18 +2,22 @@ package com.stjerncraft.controlpanel.client.core;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
 import com.google.gwt.core.client.Callback;
 import com.google.gwt.core.client.ScriptInjector;
+import com.stjerncraft.controlpanel.client.api.IClientModuleListener;
 import com.stjerncraft.controlpanel.client.api.IClientModuleManager;
 import com.stjerncraft.controlpanel.client.api.module.IClientModule;
 import com.stjerncraft.controlpanel.client.api.session.IClientSession;
 import com.stjerncraft.controlpanel.client.api.session.ISessionListener;
 import com.stjerncraft.controlpanel.common.api.ModuleManagerApiLibrary;
+import com.stjerncraft.controlpanel.common.data.IModuleInfo;
 import com.stjerncraft.controlpanel.common.data.ModuleInfo;
 
 import jsinterop.annotations.JsType;
@@ -30,10 +34,12 @@ public class ClientModuleManager implements IClientModuleManager {
 	IClientSession moduleManagerSession;
 	ModuleManagerApiLibrary moduleManagerApi;
 	
+	Set<IClientModuleListener> moduleListeners;
+	
 	Set<ModuleInfo> serverActiveModules;
-	Set<IClientModule> activeModules;
-	Set<ModuleInfo> loadingModules;
-	Set<IClientModule> loadedModules;
+	Map<String, IClientModule> activeModules;
+	Map<String, ModuleInfo> loadingModules;
+	Map<String, IClientModule> loadedModules;
 	
 	//Handle session events
 	ISessionListener sessionListener = new ISessionListener() {
@@ -58,6 +64,7 @@ public class ClientModuleManager implements IClientModuleManager {
 		public void onEnded(IClientSession session) {
 			//For now we keep all Modules as is until we get a new session.
 			//At this point subscriptions are broken.
+			logger.warning("ModuleManager session ended!");
 		}
 	};
 	
@@ -65,10 +72,11 @@ public class ClientModuleManager implements IClientModuleManager {
 	public ClientModuleManager(ClientCore clientCore) {
 		this.clientCore = clientCore;
 		
+		moduleListeners = new HashSet<IClientModuleListener>();
 		serverActiveModules = new HashSet<ModuleInfo>();
-		activeModules = new HashSet<IClientModule>();
-		loadingModules = new HashSet<ModuleInfo>();
-		loadedModules = new HashSet<IClientModule>();
+		activeModules = new HashMap<String, IClientModule>();
+		loadingModules = new HashMap<String, ModuleInfo>();
+		loadedModules = new HashMap<String, IClientModule>();
 		if(clientCore == null) {
 			logger.severe("Failed to load: Client Core is null!");
 			return;
@@ -93,7 +101,7 @@ public class ClientModuleManager implements IClientModuleManager {
 	public void cleanup() {
 		serverActiveModules.clear();
 		
-		for(IClientModule module : activeModules) {
+		for(IClientModule module : activeModules.values()) {
 			module.onDeactivate();
 		}
 		activeModules.clear();
@@ -102,16 +110,91 @@ public class ClientModuleManager implements IClientModuleManager {
 			moduleManagerSession.removeListener(sessionListener);
 	}
 	
-	@Override
-	public void registerModule(IClientModule module) {		
-		loadedModules.add(module);
+	public boolean isModuleLoading(String module) {
+		return loadingModules.containsKey(module);
+	}
+	
+	public boolean isModuleLoaded(String module) {
+		if(loadedModules.containsKey(module))
+			return true;
 		
-		//Check if module should activate active
+		return false;
+	}
+	
+	public boolean isModuleLoadingOrLoaded(String module) {
+		return isModuleLoaded(module) || isModuleLoading(module);
+	}
+	
+	@Override
+	public boolean registerModule(IClientModule module) {
+		//Verify that the named Module is actually still loading
+		if(loadingModules.remove(module.getName()) == null) {
+			logger.warning("Trying to register module which was not loading: " + module.getName());
+			return false;
+		}
+		
+		loadedModules.put(module.getName(), module);
+		logger.info("Loaded module: " + module.getName());
+		
+		for(IClientModuleListener listener : moduleListeners)
+			listener.onModuleLoaded(module);
+		
+		//Check if module should activate
 		if(!shouldModuleBeActive(module))
+			return true;
+		
+		activateModule(module);
+		
+		return true;
+	}
+	
+	@Override
+	public IClientModule getLoadedModule(String name) {
+		return loadedModules.get(name);
+	}
+	
+	@Override
+	public IModuleInfo[] getLoadingModules() {
+		return loadingModules.values().toArray(new IModuleInfo[loadingModules.size()]);
+	}
+
+	@Override
+	public IClientModule[] getLoadedModules() {
+		return loadedModules.values().toArray(new IClientModule[loadedModules.size()]);
+	}
+
+	@Override
+	public IClientModule[] getActiveModules() {
+		return activeModules.values().toArray(new IClientModule[activeModules.size()]);
+	}
+
+	@Override
+	public void addModuleListener(IClientModuleListener listener) {
+		moduleListeners.add(listener);
+	}
+
+	@Override
+	public void removeModuleListener(IClientModuleListener listener) {
+		moduleListeners.remove(listener);
+	}
+	
+	@Override
+	public boolean isModuleActive(String module) {
+		return activeModules.containsKey(module);
+	}
+	
+	private void activateModule(IClientModule module) {
+		if(activeModules.containsKey(module.getName()))
 			return;
 		
-		activeModules.add(module);
+		activeModules.put(module.getName(), module);
 		module.onActivate();
+		
+		//Inform listeners
+		for(IClientModuleListener listener : moduleListeners)
+			listener.onModuleActivated(module);
+		
+		logger.info("Activated module: " + module.getName());
 	}
 	
 	/**
@@ -146,32 +229,6 @@ public class ClientModuleManager implements IClientModuleManager {
 		return false;
 	}
 	
-	public boolean isModuleActive(IClientModule module) {
-		return activeModules.contains(module);
-	}
-	
-	public boolean isModuleLoading(ModuleInfo module) {
-		for(ModuleInfo loadingModule : loadingModules) {
-			if(module.equals(loadingModule))
-				return true;
-		}
-		
-		return false;
-	}
-	
-	public boolean isModuleLoaded(ModuleInfo module) {
-		for(IClientModule loadedModule : loadedModules) {
-			if(module.getName().equals(loadedModule.getName()))
-				return true;
-		}
-		
-		return false;
-	}
-	
-	public boolean isModuleLoadingOrLoaded(ModuleInfo module) {
-		return isModuleLoaded(module) || isModuleLoading(module);
-	}
-	
 	/**
 	 * Got a full list of currently active Modules from the server.
 	 */
@@ -181,13 +238,13 @@ public class ClientModuleManager implements IClientModuleManager {
 		
 		//Deactivate modules which were previously Active
 		List<IClientModule> deactivateModules = new ArrayList<IClientModule>();
-		for(IClientModule module : activeModules) {
-			if(!isModuleActive(module)) {
+		for(IClientModule module : activeModules.values()) {
+			if(!isModuleActive(module.getName())) {
 				deactivateModules.add(module);
 			}
 		}
-		activeModules.removeAll(deactivateModules);
 		for(IClientModule module : deactivateModules) {
+			activeModules.remove(module.getName());
 			module.onDeactivate();
 		}
 		
@@ -198,10 +255,14 @@ public class ClientModuleManager implements IClientModuleManager {
 	}
 	
 	private void loadModule(ModuleInfo module) {
-		if(isModuleLoadingOrLoaded(module))
+		if(isModuleLoadingOrLoaded(module.getName()))
 			return;
 		
-		logger.info("Loading module: " + module.getDescriptiveName());
+		logger.info("Loading module: " + module.getName());
+		loadingModules.put(module.getName(), module);
+		
+		for(IClientModuleListener listener : moduleListeners)
+			listener.onModuleLoading(module.getName());
 		
 		//Inject the module script
 		ScriptInjector.fromUrl("modules/" + module.getName() + "/" + module.getName() + ".nocache.js").setCallback(new Callback<Void, Exception>() {

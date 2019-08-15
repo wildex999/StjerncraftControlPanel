@@ -1,24 +1,36 @@
 package com.stjerncraft.controlpanel.client.api.webview;
 
-import java.util.List;
+import java.util.Map;
 
+import com.stjerncraft.controlpanel.client.api.webview.socket.ISocketContext;
 import com.stjerncraft.controlpanel.client.api.webview.socket.ISocketInstance;
 
+import jsinterop.annotations.JsType;
+
 /**
- * A Template contains HTML and Sockets.
- * The Sockets are processed and their content plugged into the HTML.
+ * A Template takes in HTML with Socket tags, processes it to output the HTML with sockets content injected.
  */
-public interface ITemplate {
+@JsType(isNative=true)
+public interface ITemplate extends IContentOutput {
 	
 	/**
 	 * Get all the Socket Instances registered for this Template
 	 * @return
 	 */
-	List<ISocketInstance<?>> getSockets();
+	Map<String, ISocketInstance> getSockets();
 	
 	/**
-	 * Get the fully processed HTML output to put into the Browser.
-	 * @return
+	 * Get the specific named socket on this Template
+	 * @param instanceName
+	 * @return Null if no socket instance with that name exists
 	 */
-	String getOutput();
+	ISocketInstance getSocket(String instanceName);
+	
+	/**
+	 * Set a new Context for the name Socket Instance.
+	 * @param instanceName
+	 * @param context
+	 * @return True if successful, or false if no instance with the given name was found.
+	 */
+	boolean setSocketContext(String instanceName, ISocketContext context);
 }

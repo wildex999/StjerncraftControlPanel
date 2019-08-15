@@ -1,10 +1,25 @@
 package com.stjerncraft.controlpanel.webview;
 
-/**
- * The Root WebView object. There can only ever be ONE Page active at once.
- * It is not itself placed inside a Socket, but provides the base Sockets for the Page layout, 
- * which everything else builds on top of.
- */
-public class Page {
+import com.stjerncraft.controlpanel.client.api.webview.IPage;
+import com.stjerncraft.controlpanel.client.api.webview.IWebView;
+
+import jsinterop.annotations.JsType;
+
+@JsType
+public class Page extends Template implements IPage {
+
+	public Page(IWebView webView, String html) {
+		super(webView, html);
+	}
+
+	@Override
+	public void onPageLoaded() {
+		
+	}
+
+	@Override
+	public void onPageUnloading() {
+		
+	}
 	
 }
