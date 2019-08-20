@@ -7,23 +7,16 @@
 <html>
   <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!--                                                               -->
     <!-- Consider inlining CSS to reduce the number of requested files -->
     <!--                                                               -->
-    <link type="text/css" rel="stylesheet" href="GWTClientCore.css">
+	<link type="text/css" rel="stylesheet" href="GWTClientCore.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-    <!--                                           -->
-    <!-- Any title is fine                         -->
-    <!--                                           -->
-    <title>Web Application Starter Project</title>
+    <title>Stjenrcraft Control Panel</title>
     
-    <!--                                           -->
-    <!-- This script loads your compiled module.   -->
-    <!-- If you add any GWT meta tags, they must   -->
-    <!-- be added before this line.                -->
-    <!--                                           -->
-    <script type="text/javascript" language="javascript" src="clientcore/clientcore.nocache.js"></script>
   </head>
 
   <!--                                           -->
@@ -41,21 +34,25 @@
       </div>
     </noscript>
 
-	<div id="page">
-    	<h1>Web Application Starter Project</h1>
-
-    	<table align="center">
-      		<tr>
-        		<td colspan="2" style="font-weight:bold;">Please enter your name:</td>        
-      		</tr>
-      		<tr>
-        		<td id="nameFieldContainer"></td>
-        		<td id="sendButtonContainer"></td>
-      		</tr>
-      		<tr>
-        		<td colspan="2" style="color:red;" id="errorLabelContainer"></td>
-      		</tr>
-    	</table>
+	<div id="sccp-page">
+    	<h1>Stjerncraft Control Panel</h1>
+		<div class="d-flex justify-content-center">
+			<div class="spinner-border text-primary" role="status">
+				<span class="sr-only">Loading...</span>
+			</div>
+		</div>
     </div>
+	
+	
+	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	
+	<!--                                           -->
+    <!-- This script loads your compiled module.   -->
+    <!-- If you add any GWT meta tags, they must   -->
+    <!-- be added before this line.                -->
+    <!--                                           -->
+	<script type="text/javascript" language="javascript" src="clientcore/clientcore.nocache.js"></script>
   </body>
 </html>

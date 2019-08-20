@@ -10,10 +10,8 @@ import java.util.logging.Logger;
 
 import com.google.gwt.regexp.shared.MatchResult;
 import com.google.gwt.regexp.shared.RegExp;
-import com.stjerncraft.controlpanel.client.api.webview.IContentOutput;
 import com.stjerncraft.controlpanel.client.api.webview.IOutputChangedListener;
 import com.stjerncraft.controlpanel.client.api.webview.ITemplate;
-import com.stjerncraft.controlpanel.client.api.webview.IWebView;
 import com.stjerncraft.controlpanel.client.api.webview.socket.ISocketContext;
 import com.stjerncraft.controlpanel.client.api.webview.socket.ISocketDefinition;
 import com.stjerncraft.controlpanel.client.api.webview.socket.ISocketInstance;
@@ -34,18 +32,7 @@ public class Template implements ITemplate {
 		}
 	}
 	
-	private IOutputChangedListener socketChangedListener = new IOutputChangedListener() {
-		
-		@Override
-		public void onOutputChanged(IContentOutput template) {
-			//If a Socket Instance has changed, assume our output has also changed
-			for(IOutputChangedListener listener : outputChangedListeners) {
-				listener.onOutputChanged(Template.this);
-			}
-		}
-	};
-	
-	private IWebView webView;
+	protected WebView webView;
 	
 	private Map<String, ISocketInstance> sockets; //Map Instance Name -> Socket Instance
 	private String rawHtml; //HTML without Sockets stripped
@@ -53,9 +40,8 @@ public class Template implements ITemplate {
 	private RegExp socketParser;
 	private Set<IOutputChangedListener> outputChangedListeners;
 	
-	public Template(IWebView webView, String html) {
+	public Template(WebView webView) {
 		this.webView = webView;
-		rawHtml = html;
 		
 		sockets = new HashMap<String, ISocketInstance>();
 		templateEntries = new ArrayList<Template.TemplateEntry>();
@@ -63,10 +49,8 @@ public class Template implements ITemplate {
 		
 		//Parse the format {{SocketName,SocketInstanceName}}
 		if(socketParser == null)
-			socketParser = RegExp.compile("\\{\\{([^\\{\\}]+?),([^\\{\\}]+?)\\}\\}", "g"); 
+			socketParser = RegExp.compile("\\{([^\\{\\}]+?),([^\\{\\}]+?)\\}", "g"); 
 		//TODO: Find a way to avoid recompiling RegEx for each instance. Can't be static as we use the "global" index tracking.
-		
-		processHtml();
 	}
 	
 	@Override
@@ -106,29 +90,34 @@ public class Template implements ITemplate {
 		StringBuilder output = new StringBuilder();
 		for(TemplateEntry entry : templateEntries) {
 			output.append(entry.html);
-			if(entry.socket != null)
+			if(entry.socket != null) {
+				output.append("<div id='" + entry.socket.getId() + "' style='display: inline'>");
 				output.append(entry.socket.getOutput());
+				output.append("</div>");
+			}
 		}
 		
 		return output.toString();
 	}
 	
-	private void addSocket(ISocketDefinition socket, SocketInstance instance) {
+	public void setHtml(String rawHtml) {
+		this.rawHtml = rawHtml;
+		processHtml();
+	}
+	
+	public String getHtml() {
+		return rawHtml;
+	}
+	
+	protected void addSocket(ISocketDefinition socket, SocketInstance instance) {
 		sockets.put(instance.getName(), instance);
-		instance.addOutputChangedListener(socketChangedListener);
 	}
 	
-	private void removeSocket(SocketInstance instance) {
-		if(sockets.remove(instance) != null)
-			instance.removeOutputChangedListener(socketChangedListener);
+	protected void removeSocket(SocketInstance instance) {
+		sockets.remove(instance.getName());
 	}
 	
-	private void clearSockets() {
-		//Remove all listeners
-		for(ISocketInstance socket : sockets.values()) {
-			socket.removeOutputChangedListener(socketChangedListener);
-		}
-		
+	protected void clearSockets() {		
 		sockets.clear();
 		templateEntries.clear();
 	}
@@ -136,9 +125,11 @@ public class Template implements ITemplate {
 	/**
 	 * Find all Sockets in the raw HTML, register them, and then strip them from the HTML.
 	 */
-	private void processHtml() {
+	protected void processHtml() {
 		clearSockets();
 		socketParser.setLastIndex(0);
+		
+		logger.info("Process: " + rawHtml);
 		
 		MatchResult result = socketParser.exec(rawHtml);
 		int index = 0;
@@ -158,7 +149,7 @@ public class Template implements ITemplate {
 			{
 				//Create the new Socket instance
 				ISocketDefinition socket = webView.getOrCreateSocketDefinition(socketName);
-				SocketInstance instance = new SocketInstance(webView, socket, instanceName);
+				SocketInstance instance = new SocketInstance(webView, socket, instanceName, webView.getNewId());
 				addSocket(socket, instance);
 				
 				templateEntries.add(new TemplateEntry(html, instance));
@@ -171,6 +162,11 @@ public class Template implements ITemplate {
 		
 		if(index < rawHtml.length() - 1) {
 			templateEntries.add(new TemplateEntry(rawHtml.substring(index), null));
+		}
+		
+		//Inform any listeners that our content has changed
+		for(IOutputChangedListener listener : outputChangedListeners) {
+			listener.onOutputChanged(Template.this);
 		}
 	}
 

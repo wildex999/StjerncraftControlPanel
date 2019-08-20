@@ -33,7 +33,7 @@ task copyModules(type: Copy) {
 	evaluationDependsOn(":GWTCoreModules")
 	dependsOn(":GWTCoreModules:compileGwt")
 	from project(":GWTCoreModules").file("war/coremodules")
-	into file("target/coremodules/")
+	into file("target/modules/coremodules/")
 }
 
 task copyCore(type: Copy) {

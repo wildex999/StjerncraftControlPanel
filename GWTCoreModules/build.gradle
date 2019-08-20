@@ -31,7 +31,10 @@ compileGwt {
 
 sourceSets {
 	main {
-		java {}
+		java {
+			srcDir "src/main/java"
+			srcDir "src/main/resources"
+		}
 	}
 	api {
 		java {

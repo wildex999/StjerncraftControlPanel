@@ -51,7 +51,7 @@ public class ModuleManagerConfig {
 	public static ModuleManagerConfig createDefault() {
 		ModuleManagerConfig newConfig = new ModuleManagerConfig();
 		newConfig.location = "modules";
-		newConfig.active = new ArrayList<>(Arrays.asList("webview"));
+		newConfig.active = new ArrayList<>(Arrays.asList("webview", "coremodules"));
 		
 		return newConfig;
 	}

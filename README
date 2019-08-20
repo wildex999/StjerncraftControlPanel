@@ -16,12 +16,14 @@ To open the project in eclipse:
 5. Set the GWT plugin to use GWT 2.8 instead of 2.7, or else you will get errors on JsInterop.
 
 - GWT Development/Debugging -
-You can easily work on and debug a single GWT project.
+You can easily work on and debug a single GWT project. This assumes you have built the project at least once, so the target/modules/yourmodule exists.
 1. With the GWT Plugin installed in Eclipse, you can Right click a project and select "Run As -> GWT Development Mode with Jetty".
-2. If asked for a target folder, you can either point it at the local war folder to tets the GWT Project alone, or point it at the "target/modules" folder to test it in the context of the whole server and other GWT modules.
-If run in the "target/modules" folder it will intercept all load calls for the GWT Module's js files when it happens, and do live-compile with Source maps in Chrome.
-3. Open the URL it makes available in the "Development Mode" tab, usually something like "http://127.0.0.1:8888/index.html".
-Note: If you run it with the Core Server running, you just open the server url as normal("http://127.0.0.1:8080"), and it will live-compile the module when loaded.
+2. When asked for a target WAR folder you point it to the Servers "modules/yourmodule" folder(I.e Stjerncraft-ControlerPanel/target/modules/webview). 
+However, this will by default create a new module folder inside there, which is not what we want. So open up Run Configurations and go to the newly created one for GWT Development Mode.
+Go to "Arguments" and add " -modulePathPrefix ../ " before -remoteUI(Without quotes).
+The reason we don't point it directly at the modules folder is that it will then clear that folder every time you start development mode.
+3. Start the Stjerncraft ControlPanel Server and open the webpage. This will now use the GWT Development mode for that Module(And any other you have setup).
+Any changes made in Eclipse can be instantly shown by just reloading the webpage.
 
 - Cleanup -
 It is recommended to a full clean & build sometimes. This can be done by running "gradlew clean" and "clear_gwt_temp.bat".

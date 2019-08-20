@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 
 import com.google.gwt.core.client.Callback;
 import com.google.gwt.core.client.ScriptInjector;
+import com.google.gwt.dom.client.StyleInjector;
 import com.stjerncraft.controlpanel.client.api.IClientModuleListener;
 import com.stjerncraft.controlpanel.client.api.IClientModuleManager;
 import com.stjerncraft.controlpanel.client.api.module.IClientModule;

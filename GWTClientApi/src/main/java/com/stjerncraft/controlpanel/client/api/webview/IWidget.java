@@ -1,5 +1,8 @@
 package com.stjerncraft.controlpanel.client.api.webview;
 
+import java.util.List;
+
+import com.stjerncraft.controlpanel.client.api.module.IClientModule;
 import com.stjerncraft.controlpanel.client.api.webview.socket.ISocketInstance;
 
 import jsinterop.annotations.JsType;
@@ -10,6 +13,12 @@ import jsinterop.annotations.JsType;
  */
 @JsType(isNative=true)
 public interface IWidget {
+	/**
+	 * Get the module this Widget is registered under
+	 * @return
+	 */
+	IClientModule getModule();
+	
 	/**
 	 * Whether this Widget should be used for the given Socket Instance.
 	 * This allows a Widget to reject being used for a given Socket Instance if it chooses to.
@@ -26,9 +35,23 @@ public interface IWidget {
 	IWidgetInstance createInstance(ISocketInstance socket);
 	
 	/**
-	 * Get content which are common between all Widget instances, added to the end of the document, outside the <body>.
-	 * This is where you can add for example Styling and Scripts which are used by each instance.
-	 * @return
+	 * List of Styles to include as part of this Widget.
+	 * Removed if the Widget module is unloaded.
+	 * @return A list of urls, or null.
+	 */
+	List<String> getStylingUrls();
+	
+	/**
+	 * List of Scripts to include as part of this Widget.
+	 * Removed if the Widet module is unloaded.
+	 * @return A list of urls, or null.
+	 */
+	List<String> getScriptUrls();
+	
+	/**
+	 * Static content (scripts etc.) shared between all instances of the widget module.
+	 * It is added to the Body under a <div> marked for this Widget. Removed if the Widget module is unloaded.
+	 * @return String with HTML content, or null.
 	 */
 	String getStaticContent();
 }

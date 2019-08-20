@@ -10,6 +10,7 @@ public class Main implements EntryPoint {
 	static Logger logger = Logger.getLogger("CoreModules.Main");
 	
 	IClientCoreApi clientCore;
+
 	
 	@Override
 	public void onModuleLoad() {
@@ -21,11 +22,9 @@ public class Main implements EntryPoint {
 			return;
 		}
 		
-		//Load modules
-		
-		
-		//Register the Modules with the Client Core
-		//clientCore.getModuleManager().registerModule(webView);
+		//Register the Module with the Client Core
+		CoreModules coreModules = new CoreModules(clientCore.getModuleManager());
+		clientCore.getModuleManager().registerModule(coreModules);
 		
 		logger.info("Loaded Core Modules.");
 	}

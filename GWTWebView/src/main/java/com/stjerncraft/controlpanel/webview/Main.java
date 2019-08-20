@@ -23,7 +23,7 @@ public class Main implements EntryPoint {
 		}
 		
 		//Register Module with the Client Core
-		webView = new WebView();
+		webView = new WebView(clientCore.getModuleManager());
 		clientCore.getModuleManager().registerModule(webView);
 		logger.info("Loaded WebView.");
 	}
