@@ -9,4 +9,7 @@ public interface LoadingProgressResources extends ClientBundle {
 	
 	@Source("LoadingProgress.html")
 	public TextResource loadingProgressWidgetHtml();
+	
+	@Source("LoadingProgress.js")
+	public TextResource loadingProgressWidgetJs();
 }

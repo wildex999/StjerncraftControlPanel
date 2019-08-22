@@ -80,20 +80,8 @@ public class LoadingProgressWidget extends BaseWidget {
 			else
 				currentModule = "";
 			
-			setProgress(divId, loaded, loaded+loading, currentModule);
+			LoadingProgressJs.setProgress(divId, loaded, loaded+loading, currentModule);
 		}
-		
-		private native void setProgress(String divId, int loadedModules, int countModules, String latestModule) /*-{
-			var progress = loadedModules / countModules * 100.0;
-			
-			var text;
-			if(loadedModules == countModules)
-				text = "All Modules loaded!";
-			else
-				text = "Loading Modules: " + latestModule + "(" + loadedModules + "/" + countModules + ")";
-			
-			$wnd.$("#" + divId + " .progress-bar").attr("aria-valuenow", progress).css({"width": progress + "%"}).text(text);
-		}-*/;
 	}
 	
 	IClientModuleManager moduleManager;
