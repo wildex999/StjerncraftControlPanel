@@ -12,7 +12,7 @@ public interface IModuleInfo {
 	String getName();
 	
 	/**
-	 * Get the Dexcriptive name for this Module, which is displayed to the user.
+	 * Get the Descriptive name for this Module, which is displayed to the user.
 	 * @return
 	 */
 	String getDescriptiveName();

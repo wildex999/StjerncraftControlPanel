@@ -114,6 +114,8 @@ public class ModuleManager implements ModuleManagerApi, IServiceProvider  {
 	public void refreshModules() {
 		if(config == null)
 			return;
+		
+		//TODO
 	}
 	
 	/**

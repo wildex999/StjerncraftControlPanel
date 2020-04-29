@@ -10,6 +10,7 @@ import com.stjerncraft.controlpanel.common.data.ModuleInfo;
 public interface ModuleManagerApi {
 	/**
 	 * Get the named module if it exists.
+	 * Permissions: core.modules.read & core.module.[modulename].read
 	 * @param name
 	 * @return Null if no module with that name exists
 	 */
@@ -18,6 +19,7 @@ public interface ModuleManagerApi {
 	/**
 	 * Return a list of all modules.
 	 * Note: Will only list modules which the user has permission to view.
+	 * Permissions: core.modules.read & core.module.[modulename].read for each module that is returned.
 	 * @return
 	 */
 	public ModuleInfo[] getAllModules();
@@ -25,12 +27,14 @@ public interface ModuleManagerApi {
 	/**
 	 * Return a list of all active modules.
 	 * Note: Will only list modules which the user has permission to view.
+	 * Permissions: core.modules.read & core.module.[modulename].read for each module that is returned.
 	 * @return
 	 */
 	public ModuleInfo[] getActiveModules();
 	
 	/**
 	 * Activate a module.
+	 * Permissions: core.modules.control & core.module.[modulename].control
 	 * @param module The module to activate.
 	 * @return False if the module was not enabled(Including if it was already activated)
 	 */
@@ -38,6 +42,7 @@ public interface ModuleManagerApi {
 	
 	/**
 	 * Activate modules.
+	 * Permissions: core.modules.control & core.module.[modulename].control for each module.
 	 * @param modules The list of modules to activate.
 	 * @return A list of modules which were NOT activated.
 	 */
@@ -45,6 +50,7 @@ public interface ModuleManagerApi {
 	
 	/**
 	 * Deactivate module
+	 * Permissions: core.modules.control & core.module.[modulename].control
 	 * @param module
 	 * @return False if the module was not removed(Including if it was not activated to begin with)
 	 */

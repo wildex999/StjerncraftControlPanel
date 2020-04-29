@@ -6,6 +6,11 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +22,8 @@ import com.stjerncraft.controlpanel.core.module.ModuleManager;
 import com.stjerncraft.controlpanel.core.module.ModuleManagerConfig;
 import com.stjerncraft.controlpanel.core.module.ModuleManagerConfigLoadException;
 import com.stjerncraft.controlpanel.core.server.HTTPServer;
+import com.stjerncraft.controlpanel.core.storage.Database;
+import com.stjerncraft.controlpanel.core.user.UserManagerService;
 import com.stjerncraft.controlpanel.exceptions.MissingServiceException;
 
 public class Main {
@@ -42,14 +49,36 @@ public class Main {
 			return;
 		}
 		
+		Database db;
+		try {
+			logger.info("Setting up Databas");
+			db = new Database("jdbc:hsqldb:file:data/testdb");
+			logger.info("Setup Database, running query");
+			CompletableFuture<String> t = db.queueQuery(con -> { return "lol";});
+			t.thenApply(str -> { logger.info("TEST GOT: " + str);return null;});
+		} catch (SQLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
 		//Core Service
 		CoreService coreService = new CoreService(core);
 		localAgent.addServiceProvider(coreService, Statics.CORE_PROVIDER_UUID);
 		
+		//User Manager service
+		UserManagerService userManagerService = setupUserManager();
+		if(userManagerService == null) {
+			logger.error("Failed to setup User Manager!");
+			return;
+		}
+		localAgent.addServiceProvider(userManagerService, null);
+		
 		//Module Manager service
 		ModuleManager moduleManagerService = setupModuleManager();
-		if(moduleManagerService == null)
+		if(moduleManagerService == null) {
+			logger.error("Failed to setup Module Manager!");
 			return;
+		}
 		localAgent.addServiceProvider(moduleManagerService, null);
 
 		//Setup Remote Agents
@@ -133,7 +162,12 @@ public class Main {
 			return null;
 		}
 		
-		
 		return moduleManager;
+	}
+	
+	private static UserManagerService setupUserManager() {
+		UserManagerService userManager = new UserManagerService();
+		
+		return userManager;
 	}
 }

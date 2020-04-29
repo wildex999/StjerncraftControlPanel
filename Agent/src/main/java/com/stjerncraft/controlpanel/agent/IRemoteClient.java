@@ -2,6 +2,10 @@ package com.stjerncraft.controlpanel.agent;
 
 import com.stjerncraft.controlpanel.api.IClient;
 
+/**
+ * A Remote Client connected to the Core Server.
+ *
+ */
 public interface IRemoteClient extends IClient {	
 	String getUuid();
 	

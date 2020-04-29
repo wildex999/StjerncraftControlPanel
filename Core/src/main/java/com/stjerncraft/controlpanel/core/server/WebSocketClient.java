@@ -43,7 +43,7 @@ public class WebSocketClient implements IRemoteClient {
 			
 			@Override
 			public void writeFailed(Throwable x) {
-				//TODO: Can this fail for normal reasons, like low bandwidth?
+				//TODO: Can this fail for normal(Non-Disconnect) reasons, like low bandwidth/buffer full?
 				socketSession.close(CoreWebSocket.WS_CODE_INTERNAL_ERROR, "Failed to send data: " + x.getMessage());
 			}
 		};
@@ -73,6 +73,7 @@ public class WebSocketClient implements IRemoteClient {
 	 */
 	@Override
 	public void sendMessage(String msg) {
+		//This is not thread safe, as the client might be disconnected between when we check and try to send
 		if(!isConnected)
 			return;
 		
